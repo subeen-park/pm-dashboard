@@ -1,3 +1,7 @@
+![wbs](https://github.com/user-attachments/assets/3879ac94-de18-46dd-a096-12275cff2294)
+
+
+
 # WBS Release Manager v2
 
 ## 구조
