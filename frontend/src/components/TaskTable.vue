@@ -264,8 +264,8 @@ export default {
 .cell-text { font-size:13px; font-weight:400; font-family:'Noto Sans KR',sans-serif }
 .cell-date { font-size:13px; font-weight:400; font-family:'DM Mono',monospace; white-space:nowrap }
 
-.task-name-cell { display:flex; align-items:center; gap:8px; flex-wrap:nowrap }
-.task-name  { font-size:13px; font-weight:600; color:var(--text); white-space:normal; line-height:1.4 }
+.task-name-cell { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; min-width:0 }
+.task-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; min-width:0 }
 .overdue-chip {
   flex-shrink:0;
   display:inline-flex; align-items:center;

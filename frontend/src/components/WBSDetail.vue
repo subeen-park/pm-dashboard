@@ -65,6 +65,13 @@
       <task-table v-if="activeTab==='tasks'" :tasks="tasks" :search="taskSearch"
         :focus-overdue-at="focusOverdueAt" :loading="tasksLoading"
         @edit="openEdit" @delete="deleteTask" />
+
+      <!-- 플로팅 지연 이동 버튼 -->
+      <div v-if="activeTab==='tasks' && cnt('overdue') > 0" class="fab-overdue" @click="focusOverdue">
+        <span class="fab-icon">⚠️</span>
+        <span class="fab-label">지연 {{ cnt('overdue') }}건</span>
+        <span class="fab-arrow">↓</span>
+      </div>
       <gantt-chart v-if="activeTab==='gantt'" :tasks="tasks" />
       <notif-panel v-if="activeTab==='notif'" :tasks="tasks" :logs="logs"
         @toast="$emit('toast',$event)" @reload-logs="$emit('reload-logs')" />
@@ -397,4 +404,21 @@ export default {
 .snapshot-label{ font-size:13px; font-weight:500; color:var(--text) }
 .snapshot-time { font-size:11px; color:var(--muted); margin-top:2px }
 .empty-state { text-align:center; padding:24px; color:var(--muted); font-size:13px }
+
+/* 플로팅 지연 이동 버튼 */
+.fab-overdue {
+  position:fixed; bottom:32px; right:32px; z-index:200;
+  display:flex; align-items:center; gap:8px;
+  background:var(--red); color:#fff;
+  padding:10px 18px; border-radius:28px;
+  font-size:13px; font-weight:600;
+  cursor:pointer; user-select:none;
+  box-shadow:0 4px 16px rgba(239,68,68,.4);
+  transition:all .2s;
+}
+.fab-overdue:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(239,68,68,.5) }
+.fab-overdue:active { transform:translateY(0) }
+.fab-icon  { font-size:14px }
+.fab-label { white-space:nowrap }
+.fab-arrow { font-size:12px; opacity:.8 }
 </style>
