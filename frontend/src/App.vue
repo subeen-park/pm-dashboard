@@ -1,524 +1,257 @@
-import os, uuid, requests as req
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, date, timedelta
-import psycopg2
-from psycopg2.extras import RealDictCursor
+<template>
+  <div class="app">
+    <!-- 서버 연결 중 오버레이 -->
+    <div v-if="serverWaking" class="waking-overlay">
+      <div class="waking-box">
+        <div class="waking-spinner"></div>
+        <div class="waking-title">서버에 연결 중...</div>
+        <div class="waking-sub">최초 접속 시 잠시 걸릴 수 있어요 (약 30초)</div>
+        <div class="waking-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
 
-app = Flask(__name__)
-CORS(app)
+    <header class="gnb">
+      <div class="logo" @click="goHome" style="cursor:pointer;">
+        <div class="logo-dot"></div>PM Suite
+      </div>
+      <nav class="gnb-nav">
+        <div class="gnb-item" :class="{active: view==='home'}" @click="goHome">홈</div>
+        <div class="gnb-item" :class="{active: view==='list' || view==='detail'}" @click="goList">릴리즈 보드</div>
+        <div class="gnb-item gnb-sub" v-if="view==='detail' && selectedProject">› {{ selectedProject.name }}</div>
+        <div class="gnb-item" :class="{active: view==='merge'}" @click="goPage('merge')">머지 트래커</div>
+        <div class="gnb-item" :class="{active: view==='jira'}" @click="goPage('jira')">Jira 레이더</div>
+      </nav>
+      <div class="gnb-right">
+        <span class="last-saved">{{ lastSaved }}</span>
+        <button class="theme-btn" @click="toggleTheme" :title="theme==='dark'?'라이트 모드':'다크 모드'">
+          {{ theme==='dark' ? '☀️' : '🌙' }}
+        </button>
+        <button v-if="view==='list'||view==='detail'" class="btn btn-primary btn-sm" @click="showProjectForm=true">+ 새 WBS</button>
+      </div>
+    </header>
 
-# ── DB 연결 ───────────────────────────────────────────────
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
+    <!-- 홈 랜딩 -->
+    <div v-if="view==='home'" class="home-page">
+      <div class="home-hero">
+        <div class="home-badge">PM Suite</div>
+        <h1 class="home-title">릴리즈부터 Jira까지,<br>PM 업무를 한 곳에서</h1>
+        <p class="home-desc">WBS 관리, 머지/빌드 추적, Jira 정체 분석을<br>하나의 대시보드에서 통합 관리하세요.</p>
+        <button class="btn btn-primary home-cta" @click="goList">릴리즈 보드 시작하기 →</button>
+      </div>
+      <div class="home-cards">
+        <div class="home-card" @click="goList">
+          <div class="home-card-icon">📋</div>
+          <div class="home-card-title">릴리즈 보드</div>
+          <div class="home-card-desc">WBS 프로젝트와 태스크를 관리하고, 간트 차트로 일정을 시각화해요. 지연/리스크 현황을 한눈에 파악하세요.</div>
+          <div class="home-card-action">시작하기 →</div>
+        </div>
+        <div class="home-card" @click="goPage('merge')">
+          <div class="home-card-icon">🔀</div>
+          <div class="home-card-title">머지 트래커</div>
+          <div class="home-card-desc">릴리즈 버전별 머지/빌드 현황을 플랫폼별로 추적해요. 미빌드, 빌드완료, 머지 상태를 실시간으로 확인하세요.</div>
+          <div class="home-card-action">확인하기 →</div>
+        </div>
+        <div class="home-card" @click="goPage('jira')">
+          <div class="home-card-icon">🎯</div>
+          <div class="home-card-title">Jira 레이더</div>
+          <div class="home-card-desc">Jira 티켓의 정체 구간을 분석하고, 병목 담당자 Top 10을 추적해요. 일정 리스크를 사전에 파악하세요.</div>
+          <div class="home-card-action">분석하기 →</div>
+        </div>
+      </div>
+    </div>
 
-def get_conn():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    <w-b-s-list v-if="view==='list'" :projects="projects" :loading="projectsLoading"
+      @select="selectProject" @new="showProjectForm=true" @edit="editProj" @delete="deleteProject" />
+    <w-b-s-detail v-if="view==='detail' && selectedProject" :project="selectedProject" :logs="logs"
+      @back="goList" @edit-project="editProj" @toast="showToast" @reload-logs="loadLogs" @refresh-projects="loadProjects" />
+    <merge-tracker v-if="view==='merge'" />
+    <jira-radar    v-if="view==='jira'" />
 
-def init_db():
-    """앱 시작 시 테이블 없으면 자동 생성"""
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS projects (
-                    id          TEXT PRIMARY KEY,
-                    name        TEXT NOT NULL,
-                    description TEXT DEFAULT '',
-                    pm          TEXT DEFAULT '',
-                    end_date    TEXT DEFAULT '',
-                    created_at  TEXT DEFAULT ''
-                );
+    <project-form v-model="showProjectForm" :edit-project="editingProject" @save="saveProject" @delete="deleteProject" />
 
-                CREATE TABLE IF NOT EXISTS tasks (
-                    id          TEXT PRIMARY KEY,
-                    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-                    grp         TEXT DEFAULT '',
-                    task        TEXT NOT NULL,
-                    assignee    TEXT DEFAULT '',
-                    start_date  TEXT DEFAULT '',
-                    end_date    TEXT DEFAULT '',
-                    progress    INTEGER DEFAULT 0,
-                    note        TEXT DEFAULT '',
-                    jira        TEXT DEFAULT '',
-                    created_at  TEXT DEFAULT ''
-                );
+    <div class="toast-wrap">
+      <div v-for="t in toasts" :key="t.id" class="toast" :class="`toast-${t.type}`">{{ t.msg }}</div>
+    </div>
+  </div>
+</template>
 
-                CREATE TABLE IF NOT EXISTS webhook (
-                    id      SERIAL PRIMARY KEY,
-                    type    TEXT DEFAULT '',
-                    token   TEXT DEFAULT '',
-                    chat    TEXT DEFAULT '',
-                    url     TEXT DEFAULT ''
-                );
+<script>
+import { api } from './api/index.js'
+import WBSList      from './components/WBSList.vue'
+import WBSDetail    from './components/WBSDetail.vue'
+import ProjectForm  from './components/ProjectForm.vue'
+import MergeTracker from './components/MergeTracker.vue'
+import JiraRadar    from './components/JiraRadar.vue'
 
-                CREATE TABLE IF NOT EXISTS logs (
-                    id         SERIAL PRIMARY KEY,
-                    log_type   TEXT DEFAULT '',
-                    title      TEXT DEFAULT '',
-                    detail     TEXT DEFAULT '',
-                    created_at TEXT DEFAULT ''
-                );
-
-                CREATE TABLE IF NOT EXISTS task_snapshots (
-                    id          SERIAL PRIMARY KEY,
-                    project_id  TEXT NOT NULL,
-                    snapshot    TEXT NOT NULL,
-                    label       TEXT DEFAULT '',
-                    created_at  TEXT DEFAULT ''
-                );
-            """)
-        conn.commit()
-
-# ── helpers ──────────────────────────────────────────────
-def row_to_project(row):
+export default {
+  name: 'App',
+  components: { WBSList, WBSDetail, ProjectForm, MergeTracker, JiraRadar },
+  data() {
     return {
-        'id': row['id'], 'name': row['name'],
-        'description': row['description'], 'pm': row['pm'],
-        'endDate': row['end_date'], 'createdAt': row['created_at'],
+      view: 'home',
+      projects: [], selectedProject: null, logs: [],
+      showProjectForm: false, editingProject: null,
+      lastSaved: '', toasts: [],
+      theme: 'light',
+      projectsLoading: true,
+      serverWaking: false,
     }
-
-def row_to_task(row):
-    return {
-        'id': row['id'], 'group': row['grp'],
-        'task': row['task'], 'assignee': row['assignee'],
-        'startDate': row['start_date'], 'endDate': row['end_date'],
-        'progress': row['progress'], 'note': row['note'],
-        'jira': row['jira'],
+  },
+  async mounted() {
+    const savedTheme = localStorage.getItem('wbs-theme') || 'light'
+    this.setTheme(savedTheme)
+    await this.loadWithWakeup()
+    await this.loadLogs()
+  },
+  methods: {
+    async loadWithWakeup() {
+      // 서버 깨우기 시도 (타임아웃 3초 안에 응답 없으면 waking 표시)
+      const wakeTimer = setTimeout(() => { this.serverWaking = true }, 3000)
+      try {
+        await this.loadProjects()
+      } finally {
+        clearTimeout(wakeTimer)
+        this.serverWaking = false
+      }
+    },
+    async loadProjects() {
+      this.projectsLoading = true
+      try {
+        this.projects = await api.getProjects()
+        this.lastSaved = new Date().toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }) + ' 업데이트'
+        if (this.selectedProject) {
+          const updated = this.projects.find(p => p.id === this.selectedProject.id)
+          if (updated) this.selectedProject = updated
+        }
+      } catch(e) {
+        console.error(e)
+      } finally {
+        this.projectsLoading = false
+      }
+    },
+    async loadLogs() { try { this.logs = await api.getLogs() } catch(e) {} },
+    selectProject(proj) { this.selectedProject = proj; this.view = 'detail' },
+    goHome() { this.view = 'home'; this.selectedProject = null },
+    goList() { this.view = 'list'; this.selectedProject = null },
+    goPage(page) { this.view = page; this.selectedProject = null },
+    editProj(proj) { this.editingProject = {...proj}; this.showProjectForm = true },
+    async saveProject(form) {
+      if (form.id) {
+        await api.updateProject(form.id, form)
+        this.showToast({ msg: 'WBS가 수정되었습니다', type: 'ok' })
+        if (this.selectedProject?.id === form.id) this.selectedProject = { ...this.selectedProject, ...form }
+      } else {
+        await api.createProject(form)
+        this.showToast({ msg: 'WBS가 등록되었습니다', type: 'ok' })
+      }
+      this.showProjectForm = false; this.editingProject = null
+      await this.loadProjects()
+    },
+    async deleteProject(id) {
+      try {
+        await api.deleteProject(id)
+        this.showProjectForm = false; this.editingProject = null
+        this.showToast({ msg: 'WBS가 삭제되었습니다', type: 'info' })
+        if (this.selectedProject?.id === id) this.goList()
+        await this.loadProjects()
+      } catch(e) { this.showToast({ msg: '삭제 실패: ' + e.message, type: 'err' }) }
+    },
+    showToast({ msg, type='info' }) {
+      const id = Date.now()
+      this.toasts.push({ id, msg, type })
+      setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id) }, 5000)
+    },
+    toggleTheme() { this.setTheme(this.theme==='dark' ? 'light' : 'dark') },
+    setTheme(t) {
+      this.theme = t
+      document.documentElement.setAttribute('data-theme', t)
+      localStorage.setItem('wbs-theme', t)
     }
+  }
+}
+</script>
 
-def diff_days(end_str):
-    try:
-        return (datetime.strptime(end_str, '%Y-%m-%d').date() - date.today()).days
-    except:
-        return None
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-def get_status(task):
-    p = task.get('progress', 0) or 0
-    d = diff_days(task.get('endDate', ''))
-    if p >= 100:   return 'done'
-    if d is None:  return 'pending'
-    if d < 0:      return 'overdue'
-    if d <= 7:     return 'risk'
-    if p > 0:      return 'progress'
-    return 'pending'
+:root{
+  --bg:#09090f;--bg2:#111118;--bg3:#18181f;--bg4:#1f1f28;
+  --amber:#e8a94a;--amber-dim:#7a5420;
+  --blue:#4a9eff;--blue-dim:#1a3d6a;
+  --green:#4ecb8d;--green-dim:#1a4a32;
+  --red:#ff6b6b;--red-dim:#5a1a1a;
+  --yellow:#f0c040;--yellow-dim:#5a4210;
+  --text:#e2e2ec;--muted:#7070a0;--faint:#3a3a55;
+  --border:#202030;--border2:#2a2a40;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6f8;--bg2:#ffffff;--bg3:#f9fafb;--bg4:#f3f4f6;
+  --amber:#f59f00;--amber-dim:#fff3bf;
+  --blue:#339af0;--blue-dim:#e7f5ff;
+  --green:#20c997;--green-dim:#e6fcf5;
+  --red:#ff6b6b;--red-dim:#ffe3e3;
+  --yellow:#fcc419;--yellow-dim:#fff9db;
+  --text:#212529;--muted:#868e96;--faint:#ced4da;
+  --border:#e9ecef;--border2:#dee2e6;
+}
 
-def calc_stats(project_id):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM tasks WHERE project_id=%s", (project_id,))
-            rows = cur.fetchall()
-    tasks = [row_to_task(r) for r in rows]
-    total = len(tasks)
-    if total == 0:
-        return {'total': 0, 'progress': 0, 'status': 'pending'}
-    statuses = [get_status(t) for t in tasks]
-    prog = round(sum(t['progress'] or 0 for t in tasks) / total)
-    if 'overdue' in statuses: status = 'overdue'
-    elif 'risk'  in statuses: status = 'risk'
-    elif all(s == 'done' for s in statuses): status = 'done'
-    elif any(s in ('done','progress') for s in statuses): status = 'progress'
-    else: status = 'pending'
-    return {'total': total, 'progress': prog, 'status': status}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:15px;min-height:100vh;transition:background .3s,color .3s}
+.app{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
 
-def add_log(log_type, title, detail):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO logs (log_type,title,detail,created_at) VALUES (%s,%s,%s,%s)",
-                (log_type, title, detail, datetime.now().strftime('%Y-%m-%d %H:%M'))
-            )
-            cur.execute("DELETE FROM logs WHERE id NOT IN (SELECT id FROM logs ORDER BY id DESC LIMIT 50)")
-        conn.commit()
+/* GNB */
+.gnb{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;transition:background .3s}
+.logo{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--amber);white-space:nowrap}
+.logo-dot{width:8px;height:8px;background:var(--amber);border-radius:50%;flex-shrink:0}
+.gnb-nav{display:flex;align-items:center;gap:4px;flex:1}
+.gnb-item{padding:8px 16px;border-radius:8px;font-size:14px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.gnb-item:hover{background:var(--bg3);color:var(--text)}
+.gnb-item.active{background:var(--bg4);color:var(--text);font-weight:500}
+.gnb-sub{color:var(--amber)!important;background:transparent!important;font-size:12px;padding:6px 8px;cursor:default}
+.gnb-right{display:flex;align-items:center;gap:12px;margin-left:auto}
+.last-saved{font-size:12px;color:var(--muted);white-space:nowrap}
+.theme-btn{background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s}
+.theme-btn:hover{background:var(--bg3);transform:scale(1.05)}
 
-def build_message(task, project_name, trigger):
-    emoji = {'done':'✅','progress':'🔵','risk':'⚠️','overdue':'🚨','pending':'⏳'}
-    s = get_status(task)
-    return (f"{emoji.get(s,'📋')} *[WBS 알림]* {trigger}\n\n"
-            f"📁 프로젝트: {project_name}\n"
-            f"📌 태스크: {task.get('task','')}\n"
-            f"👤 담당자: {task.get('assignee','미지정')}\n"
-            f"📂 그룹: {task.get('group','')}\n"
-            f"📅 마감일: {task.get('endDate','')}\n"
-            f"📊 진행률: {task.get('progress',0)}%")
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;border:none;transition:all .15s;font-weight:500}
+.btn-primary{background:var(--amber);color:#0a0800}.btn-primary:hover{background:#f0b85a}
+.btn-sm{padding:7px 14px;font-size:13px}
 
-def get_webhook_data():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM webhook ORDER BY id DESC LIMIT 1")
-            row = cur.fetchone()
-    return dict(row) if row else {}
+/* 서버 깨우기 오버레이 */
+.waking-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center}
+.waking-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 48px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.waking-spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite}
+.waking-title{font-size:18px;font-weight:600;color:var(--text)}
+.waking-sub{font-size:13px;color:var(--muted)}
+.waking-dots{display:flex;gap:6px}
+.waking-dots span{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:dot-bounce .8s infinite alternate}
+.waking-dots span:nth-child(2){animation-delay:.2s}
+.waking-dots span:nth-child(3){animation-delay:.4s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dot-bounce{from{opacity:.3;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 
-def send_webhook(text):
-    wh = get_webhook_data()
-    if not wh.get('type'): return False, '웹훅 설정 없음'
-    try:
-        if wh['type'] == 'telegram':
-            token, chat = wh.get('token',''), wh.get('chat','')
-            if not token or not chat: return False, 'Token/Chat ID 없음'
-            r = req.post(f"https://api.telegram.org/bot{token}/sendMessage",
-                         json={'chat_id':chat,'text':text,'parse_mode':'Markdown'}, timeout=10)
-        else:
-            url = wh.get('url','')
-            if not url: return False, 'Webhook URL 없음'
-            r = req.post(url, json={'text':text}, timeout=10)
-        return r.ok, r.text
-    except Exception as e:
-        return False, str(e)
+/* 홈 랜딩 */
+.home-page{padding:60px 24px;max-width:1100px;margin:0 auto}
+.home-hero{text-align:center;padding:60px 0 80px}
+.home-badge{display:inline-block;background:var(--amber-dim);color:var(--amber);font-size:13px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:24px;font-family:'DM Mono',monospace}
+.home-title{font-size:42px;font-weight:700;line-height:1.3;margin-bottom:20px;color:var(--text)}
+.home-desc{font-size:16px;color:var(--muted);line-height:1.8;margin-bottom:36px}
+.home-cta{font-size:15px;padding:14px 32px;border-radius:10px}
+.home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.home-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:12px}
+.home-card:hover{border-color:var(--amber);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.home-card-icon{font-size:32px}
+.home-card-title{font-size:18px;font-weight:600;color:var(--text)}
+.home-card-desc{font-size:13px;color:var(--muted);line-height:1.7;flex:1}
+.home-card-action{font-size:13px;color:var(--amber);font-weight:600}
 
-# ── scheduler ─────────────────────────────────────────────
-def daily_check():
-    wh = get_webhook_data()
-    if not wh.get('type'): return
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM projects")
-            projects = cur.fetchall()
-    for proj in projects:
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM tasks WHERE project_id=%s", (proj['id'],))
-                rows = cur.fetchall()
-        for row in rows:
-            t = row_to_task(row)
-            if (t['progress'] or 0) >= 100: continue
-            d = diff_days(t['endDate'])
-            if d is None: continue
-            if d == 7:
-                ok, _ = send_webhook(build_message(t, proj['name'], 'D-7 마감 7일 전'))
-                add_log('warning' if ok else 'error', f"D-7: {t['task']}", proj['name'])
-            elif d == 1:
-                ok, _ = send_webhook(build_message(t, proj['name'], '⚡ D-1 내일 마감'))
-                add_log('warning' if ok else 'error', f"D-1: {t['task']}", proj['name'])
-            elif d < 0:
-                ok, _ = send_webhook(build_message(t, proj['name'], f'🚨 {abs(d)}일 초과'))
-                add_log('error', f"지연: {t['task']}", f"{proj['name']} · {abs(d)}일 초과")
-
-scheduler = BackgroundScheduler()
-scheduler.add_job(daily_check, 'cron', hour=9, minute=0)
-scheduler.start()
-
-# ── projects ──────────────────────────────────────────────
-@app.route('/api/projects', methods=['GET'])
-def get_projects():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM projects ORDER BY created_at")
-            rows = cur.fetchall()
-    result = []
-    for r in rows:
-        p = row_to_project(r)
-        result.append({**p, **calc_stats(p['id'])})
-    return jsonify(result)
-
-@app.route('/api/projects', methods=['POST'])
-def create_project():
-    d = request.json
-    pid = str(uuid.uuid4())[:8]
-    now = datetime.now().strftime('%Y-%m-%d')
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO projects (id,name,description,pm,end_date,created_at) VALUES (%s,%s,%s,%s,%s,%s)",
-                (pid, d.get('name',''), d.get('description',''), d.get('pm',''), d.get('endDate',''), now)
-            )
-        conn.commit()
-    return jsonify({'id':pid, **d, 'createdAt':now}), 201
-
-@app.route('/api/projects/<pid>', methods=['GET'])
-def get_project(pid):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM projects WHERE id=%s", (pid,))
-            row = cur.fetchone()
-    if not row: return jsonify({'error':'not found'}), 404
-    p = row_to_project(row)
-    return jsonify({**p, **calc_stats(pid)})
-
-@app.route('/api/projects/<pid>', methods=['PUT'])
-def update_project(pid):
-    d = request.json
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE projects SET name=%s,description=%s,pm=%s,end_date=%s WHERE id=%s",
-                (d.get('name',''), d.get('description',''), d.get('pm',''), d.get('endDate',''), pid)
-            )
-        conn.commit()
-    return jsonify({'ok': True})
-
-@app.route('/api/projects/<pid>', methods=['DELETE'])
-def delete_project(pid):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM projects WHERE id=%s", (pid,))
-        conn.commit()
-    return jsonify({'ok': True})
-
-# ── tasks ─────────────────────────────────────────────────
-@app.route('/api/projects/<pid>/tasks', methods=['GET'])
-def get_tasks(pid):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM tasks WHERE project_id=%s ORDER BY created_at", (pid,))
-            rows = cur.fetchall()
-    return jsonify([row_to_task(r) for r in rows])
-
-@app.route('/api/projects/<pid>/tasks', methods=['POST'])
-def create_task(pid):
-    d = request.json
-    tid = str(uuid.uuid4())[:8]
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO tasks (id,project_id,grp,task,assignee,start_date,end_date,progress,note,jira,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (tid, pid, d.get('group',''), d.get('task',''), d.get('assignee',''),
-                 d.get('startDate',''), d.get('endDate',''), d.get('progress',0),
-                 d.get('note',''), d.get('jira',''), now)
-            )
-        conn.commit()
-    return jsonify({**d, 'id': tid}), 201
-
-@app.route('/api/projects/<pid>/tasks/<tid>', methods=['PUT'])
-def update_task(pid, tid):
-    d = request.json
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE tasks SET grp=%s,task=%s,assignee=%s,start_date=%s,end_date=%s,progress=%s,note=%s,jira=%s WHERE id=%s AND project_id=%s",
-                (d.get('group',''), d.get('task',''), d.get('assignee',''),
-                 d.get('startDate',''), d.get('endDate',''), d.get('progress',0),
-                 d.get('note',''), d.get('jira',''), tid, pid)
-            )
-        conn.commit()
-    return jsonify({'ok': True})
-
-@app.route('/api/projects/<pid>/tasks/<tid>', methods=['DELETE'])
-def delete_task(pid, tid):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM tasks WHERE id=%s AND project_id=%s", (tid, pid))
-        conn.commit()
-    return jsonify({'ok': True})
-
-# ── snapshot helpers ──────────────────────────────────────
-import json as _json
-
-def save_snapshot(pid, label):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM tasks WHERE project_id=%s ORDER BY created_at", (pid,))
-            rows = cur.fetchall()
-        tasks_data = [row_to_task(r) for r in rows]
-        now = datetime.now().strftime('%Y-%m-%d %H:%M')
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO task_snapshots (project_id, snapshot, label, created_at) VALUES (%s,%s,%s,%s)",
-                (pid, _json.dumps(tasks_data, ensure_ascii=False), label, now)
-            )
-            # 최대 10개 스냅샷 유지
-            cur.execute("""
-                DELETE FROM task_snapshots WHERE id IN (
-                    SELECT id FROM task_snapshots WHERE project_id=%s
-                    ORDER BY id DESC OFFSET 10
-                )
-            """, (pid,))
-        conn.commit()
-
-@app.route('/api/projects/<pid>/snapshots', methods=['GET'])
-def get_snapshots(pid):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, label, created_at FROM task_snapshots WHERE project_id=%s ORDER BY id DESC", (pid,))
-            rows = cur.fetchall()
-    return jsonify([{'id': r['id'], 'label': r['label'], 'created_at': r['created_at']} for r in rows])
-
-@app.route('/api/projects/<pid>/snapshots/<int:sid>/restore', methods=['POST'])
-def restore_snapshot(pid, sid):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT snapshot FROM task_snapshots WHERE id=%s AND project_id=%s", (sid, pid))
-            row = cur.fetchone()
-    if not row:
-        return jsonify({'error': '스냅샷을 찾을 수 없습니다'}), 404
-    tasks_data = _json.loads(row['snapshot'])
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM tasks WHERE project_id=%s", (pid,))
-            for t in tasks_data:
-                tid = str(uuid.uuid4())[:8]
-                cur.execute(
-                    "INSERT INTO tasks (id,project_id,grp,task,assignee,start_date,end_date,progress,note,jira,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                    (tid, pid, t.get('group',''), t.get('task',''), t.get('assignee',''),
-                     t.get('startDate',''), t.get('endDate',''), t.get('progress',0),
-                     t.get('note',''), t.get('jira',''), now)
-                )
-        conn.commit()
-    return jsonify({'ok': True, 'count': len(tasks_data)})
-
-# ── excel upload ──────────────────────────────────────────
-@app.route('/api/projects/<pid>/tasks/upload', methods=['POST'])
-def upload_tasks_excel(pid):
-    if 'file' not in request.files:
-        return jsonify({'error': '파일이 없습니다'}), 400
-    file = request.files['file']
-    try:
-        import pandas as pd, io
-        if file.filename.endswith('.csv'):
-            try:    df_raw = pd.read_csv(file, encoding='utf-8', header=None)
-            except: file.seek(0); df_raw = pd.read_csv(file, encoding='cp949', header=None)
-        else:
-            df_raw = pd.read_excel(file, header=None)
-        df_raw = df_raw.fillna('')
-        header_idx = next((i for i, row in df_raw.iterrows()
-                          if any(k in ' '.join(str(x) for x in row.values).lower()
-                                 for k in ['task','태스크','group'])), -1)
-        if header_idx == -1:
-            return jsonify({'error': '헤더 행을 찾을 수 없습니다'}), 400
-        df = df_raw.iloc[header_idx+1:].copy()
-        df.columns = df_raw.iloc[header_idx]
-        def get_val(row, keys, default=''):
-            for k in keys:
-                for col in df.columns:
-                    if str(col).strip().lower() == k.lower():
-                        return str(row.get(col, default)).strip()
-            return default
-        count = 0
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        save_snapshot(pid, f'업로드 전 백업 ({datetime.now().strftime("%m/%d %H:%M")})')
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM tasks WHERE project_id=%s", (pid,))
-                for _, row in df.iterrows():
-                    if not any(str(v).strip() for v in row.values): continue
-                    t_name = get_val(row, ['Task','태스크명','태스크','작업명'])
-                    s_name = get_val(row, ['Subtask','서브태스크','상세작업'])
-                    if not t_name and not s_name: continue
-                    task_name = f"[{t_name}] {s_name}" if t_name and s_name else (t_name or s_name)
-                    jira_val  = get_val(row, ['Jira','지라','Link','링크'])
-                    group_val = get_val(row, ['Team','Group','그룹','팀'], '기획')
-                    assignee  = get_val(row, ['Assignee','담당자'])
-                    start_date= get_val(row, ['Start Date','시작일','시작']) or date.today().isoformat()
-                    end_date  = get_val(row, ['End Date','마감일','종료일'])
-                    prog_raw  = get_val(row, ['Progress','진행률','진척도'], '0').replace('%','')
-                    try: progress = int(float(prog_raw)) if prog_raw else 0
-                    except: progress = 0
-                    note = get_val(row, ['Note','메모','비고'])
-                    tid = str(uuid.uuid4())[:8]
-                    cur.execute(
-                        "INSERT INTO tasks (id,project_id,grp,task,assignee,start_date,end_date,progress,note,jira,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                        (tid, pid, group_val, task_name, assignee, start_date[:10],
-                         end_date[:10] if end_date else '', progress, note, jira_val, now)
-                    )
-                    count += 1
-            conn.commit()
-        return jsonify({'ok': True, 'count': count})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/projects/<pid>/tasks/upload-sheets', methods=['POST'])
-def upload_from_sheets(pid):
-    csv_url = request.json.get('csv_url','')
-    if not csv_url: return jsonify({'error':'csv_url 없음'}), 400
-    try:
-        import pandas as pd, io
-        r = req.get(csv_url, timeout=15); r.raise_for_status()
-        try:    df_raw = pd.read_csv(io.StringIO(r.content.decode('utf-8')), header=None)
-        except: df_raw = pd.read_csv(io.StringIO(r.content.decode('cp949')), header=None)
-        df_raw = df_raw.fillna('')
-        header_idx = next((i for i, row in df_raw.iterrows()
-                          if any(k in ' '.join(str(x) for x in row.values).lower()
-                                 for k in ['task','태스크','group'])), -1)
-        if header_idx == -1: return jsonify({'error':'헤더 행 없음'}), 400
-        df = df_raw.iloc[header_idx+1:].copy()
-        df.columns = df_raw.iloc[header_idx]
-        def get_val(row, keys, default=''):
-            for k in keys:
-                for col in df.columns:
-                    if str(col).strip().lower() == k.lower():
-                        return str(row.get(col, default)).strip()
-            return default
-        count = 0
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                for _, row in df.iterrows():
-                    if not any(str(v).strip() for v in row.values): continue
-                    t_name = get_val(row, ['Task','태스크명','태스크'])
-                    s_name = get_val(row, ['Subtask','서브태스크'])
-                    if not t_name and not s_name: continue
-                    task_name = f"[{t_name}] {s_name}" if t_name and s_name else (t_name or s_name)
-                    tid = str(uuid.uuid4())[:8]
-                    end_date = get_val(row, ['End Date','마감일','종료일'])
-                    prog_raw = get_val(row, ['Progress','진행률'], '0').replace('%','')
-                    try: progress = int(float(prog_raw)) if prog_raw else 0
-                    except: progress = 0
-                    cur.execute(
-                        "INSERT INTO tasks (id,project_id,grp,task,assignee,start_date,end_date,progress,note,jira,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                        (tid, pid,
-                         get_val(row, ['Team','Group','그룹','팀'], '기획'),
-                         task_name,
-                         get_val(row, ['Assignee','담당자']),
-                         get_val(row, ['Start Date','시작일']) or date.today().isoformat(),
-                         end_date[:10] if end_date else '',
-                         progress,
-                         get_val(row, ['Note','메모','비고']),
-                         get_val(row, ['Jira','지라','Link']),
-                         now)
-                    )
-                    count += 1
-            conn.commit()
-        return jsonify({'ok': True, 'count': count})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# ── webhook / logs ────────────────────────────────────────
-@app.route('/api/webhook', methods=['GET'])
-def get_webhook():
-    wh = get_webhook_data()
-    return jsonify({**wh, 'token': '***' if wh.get('token') else ''})
-
-@app.route('/api/webhook', methods=['POST'])
-def save_webhook():
-    d = request.json
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM webhook")
-            cur.execute(
-                "INSERT INTO webhook (type,token,chat,url) VALUES (%s,%s,%s,%s)",
-                (d.get('type',''), d.get('token',''), d.get('chat',''), d.get('url',''))
-            )
-        conn.commit()
-    return jsonify({'ok': True})
-
-@app.route('/api/webhook/test', methods=['POST'])
-def test_webhook():
-    dummy = {'task':'[테스트] WBS Manager','group':'QA','assignee':'담당자1',
-             'endDate':str(date.today()+timedelta(days=3)),'progress':0}
-    ok, msg = send_webhook(build_message(dummy, 'Test', '테스트 메시지'))
-    add_log('success' if ok else 'error', '테스트 전송', '성공' if ok else msg)
-    return jsonify({'ok': ok, 'message': '전송 성공' if ok else msg})
-
-@app.route('/api/logs', methods=['GET'])
-def get_logs():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT log_type as type, title, detail, created_at as time FROM logs ORDER BY id DESC LIMIT 50")
-            rows = cur.fetchall()
-    return jsonify([dict(r) for r in rows])
-
-@app.route('/api/notify/now', methods=['POST'])
-def notify_now():
-    daily_check()
-    return jsonify({'ok': True})
-
-@app.route('/api/health', methods=['GET'])
-def health():
-    return jsonify({'ok': True})
-
-# ── start ─────────────────────────────────────────────────
-if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+/* 토스트 */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:14px;animation:slideIn .2s ease;min-width:260px;line-height:1.4;color:var(--text)}
+.toast-ok{border-color:var(--green-dim);color:var(--green)}
+.toast-err{border-color:var(--red-dim);color:var(--red)}
+.toast-info{border-color:var(--blue-dim);color:var(--blue)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
