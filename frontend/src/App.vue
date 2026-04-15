@@ -1,21 +1,32 @@
 <template>
   <div class="app">
     <header class="gnb">
-      <div class="logo" @click="goList" style="cursor:pointer;"><div class="logo-dot"></div>WBS Release Manager</div>
+      <div class="logo" @click="goList" style="cursor:pointer;">
+        <div class="logo-dot"></div>PM Suite
+      </div>
       <nav class="gnb-nav">
-        <div class="gnb-item" :class="{active: view==='list'}" @click="goList">WBS 목록</div>
-        <div class="gnb-item" :class="{active: view==='detail'}" v-if="selectedProject">
-          {{ selectedProject.name }}
+        <!-- WBS 릴리즈 보드 -->
+        <div class="gnb-item" :class="{active: view==='list' || view==='detail'}" @click="goList">
+          릴리즈 보드
+        </div>
+        <div class="gnb-item gnb-sub" v-if="view==='detail' && selectedProject">
+          › {{ selectedProject.name }}
+        </div>
+        <!-- 머지 트래커 -->
+        <div class="gnb-item" :class="{active: view==='merge'}" @click="goPage('merge')">
+          머지 트래커
+        </div>
+        <!-- Jira 레이더 -->
+        <div class="gnb-item" :class="{active: view==='jira'}" @click="goPage('jira')">
+          Jira 레이더
         </div>
       </nav>
       <div class="gnb-right">
         <span class="last-saved">{{ lastSaved }}</span>
-        
         <button class="theme-btn" @click="toggleTheme" :title="theme === 'dark' ? '라이트 모드로 보기' : '다크 모드로 보기'">
           {{ theme === 'dark' ? '☀️' : '🌙' }}
         </button>
-
-        <button class="btn btn-primary btn-sm" @click="showProjectForm=true">+ 새 WBS</button>
+        <button v-if="view==='list' || view==='detail'" class="btn btn-primary btn-sm" @click="showProjectForm=true">+ 새 WBS</button>
       </div>
     </header>
 
@@ -27,7 +38,8 @@
       @new="showProjectForm=true"
       @edit="editProj"
       @delete="deleteProject" 
-    /><w-b-s-detail
+    />
+    <w-b-s-detail
       v-if="view==='detail' && selectedProject"
       :project="selectedProject"
       :logs="logs"
@@ -37,6 +49,8 @@
       @reload-logs="loadLogs"
       @refresh-projects="loadProjects"
     />
+    <merge-tracker v-if="view==='merge'" />
+    <jira-radar    v-if="view==='jira'" />
 
     <project-form
       v-model="showProjectForm"
@@ -53,13 +67,15 @@
 
 <script>
 import { api } from './api/index.js'
-import WBSList     from './components/WBSList.vue'
-import WBSDetail   from './components/WBSDetail.vue'
-import ProjectForm from './components/ProjectForm.vue'
+import WBSList      from './components/WBSList.vue'
+import WBSDetail    from './components/WBSDetail.vue'
+import ProjectForm  from './components/ProjectForm.vue'
+import MergeTracker from './components/MergeTracker.vue'
+import JiraRadar    from './components/JiraRadar.vue'
 
 export default {
   name: 'App',
-  components: { WBSList, WBSDetail, ProjectForm },
+  components: { WBSList, WBSDetail, ProjectForm, MergeTracker, JiraRadar },
   data() {
     return {
       view: 'list',
@@ -94,6 +110,7 @@ export default {
     async loadLogs() { this.logs = await api.getLogs() },
     selectProject(proj) { this.selectedProject = proj; this.view = 'detail' },
     goList() { this.view = 'list'; this.selectedProject = null },
+    goPage(page) { this.view = page; this.selectedProject = null },
     editProj(proj) { this.editingProject = {...proj}; this.showProjectForm = true },
 
     async saveProject(form) {
@@ -178,6 +195,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .gnb-item{padding:8px 16px;border-radius:8px;font-size:14px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
 .gnb-item:hover{background:var(--bg3);color:var(--text)}
 .gnb-item.active{background:var(--bg4);color:var(--text);font-weight:500;}
+.gnb-sub{color:var(--amber)!important;background:transparent!important;font-size:12px;padding:6px 8px;cursor:default}
 .gnb-right{display:flex;align-items:center;gap:12px;margin-left:auto}
 .last-saved{font-size:12px;color:var(--muted);white-space:nowrap}
 
