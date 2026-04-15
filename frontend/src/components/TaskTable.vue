@@ -55,7 +55,7 @@
             <tr v-for="t in list" :key="t.id"
               class="task-row"
               :class="{ 'row-focused': focusedId===t.id }"
-              :ref="el => { if(getStatus(t)==='overdue' && el) overdueRefs[t.id]=el }">
+              :data-task-id="t.id">
               <td class="muted center">-</td>
               <td class="task-name-cell">
                 <span class="task-name">{{ t.task }}</span>
@@ -214,13 +214,17 @@ export default {
       this.closeMenu()
     },
     focusNextOverdue() {
-      const ids = this.sorted.filter(t => getStatus(t) === 'overdue').map(t => t.id)
+      const ids = []
+      Object.values(this.grouped).forEach(list => {
+        list.filter(t => getStatus(t) === 'overdue').forEach(t => ids.push(t.id))
+      })
       if (!ids.length) return
       const id = ids[this.overdueIndex % ids.length]
       this.overdueIndex++
       this.focusedId = id
       this.$nextTick(() => {
-        const el = this.overdueRefs[id]
+        // querySelector로 data-id 속성 기반 찾기
+        const el = this.$el.querySelector(`[data-task-id="${id}"]`)
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         setTimeout(() => { this.focusedId = null }, 1800)
       })
@@ -237,9 +241,9 @@ export default {
 .sort-btn.on{ background:var(--bg4); color:var(--text); border-color:var(--border) }
 
 .wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:visible }
-.wbs-table { width:100%; border-collapse:collapse; table-layout:fixed }
+.wbs-table { width:100%; border-collapse:collapse; table-layout:auto }
 .wbs-table th { background:var(--bg3); padding:10px 12px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap }
-.wbs-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle }
+.wbs-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; word-break:keep-all }
 .wbs-table tr:last-child td { border-bottom:none }
 
 /* 공통 셀 폰트 — 담당자 기준으로 통일 */

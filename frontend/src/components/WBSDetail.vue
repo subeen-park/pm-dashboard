@@ -27,6 +27,10 @@
             <button class="upload-item" @click="showSheetsModal=true; showUploadMenu=false">
               🔗 Google Sheets 링크
             </button>
+            <div class="upload-divider"></div>
+            <button class="upload-item" @click="downloadTemplate(); showUploadMenu=false">
+              ⬇️ 업로드 양식 다운받기
+            </button>
           </div>
         </div>
 
@@ -153,14 +157,38 @@ export default {
     // 지연 태스크 포커싱 — 클릭마다 +1해서 TaskTable 트리거
     focusOverdue() {
       if (!this.cnt('overdue')) return
-      if (this.activeTab !== 'tasks') this.activeTab = 'tasks'
-      this.$nextTick(() => { this.focusOverdueAt++ })
+      if (this.activeTab !== 'tasks') {
+        this.activeTab = 'tasks'
+        this.$nextTick(() => {
+          setTimeout(() => { this.focusOverdueAt++ }, 100)
+        })
+      } else {
+        this.focusOverdueAt++
+      }
     },
 
     closeUploadMenu(e) {
       if (this.$refs.uploadWrap && !this.$refs.uploadWrap.contains(e.target)) {
         this.showUploadMenu = false
       }
+    },
+
+    downloadTemplate() {
+      // 브라우저에서 직접 CSV 양식 다운로드
+      const headers = ['Group', 'Task', 'Subtask', 'Note', 'JIRA', 'Team', 'Assignee', 'Start Date', 'End Date', 'Progress']
+      const sample = [
+        ['기획', '', '신규 기능 기획서 작성', '요구사항 정의 포함', 'PROJ-001', '기획팀', '기획자1', '2025-10-17', '2025-10-27', '100'],
+        ['디자인', '', 'UI 화면 설계', '와이어프레임 포함', '', '디자인팀', '디자인1', '2025-10-20', '2025-11-05', '80'],
+        ['개발(BE)', '', 'API 개발', '', 'PROJ-002', '개발(BE)팀', '백엔드1', '2025-11-01', '2025-11-20', '60'],
+        ['개발(FE)', '', 'UI 구현', '', '', '개발(FE)팀', '프론트1', '2025-11-10', '2025-11-30', '0'],
+        ['QA', '', '기능 테스트', '', '', 'QA팀', 'QA1', '2025-12-01', '2025-12-10', '0'],
+      ]
+      const csvRows = [headers.join(','), ...sample.map(r => r.map(v => `"${v}"`).join(','))]
+      const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = 'wbs_업로드_양식.csv'
+      a.click(); URL.revokeObjectURL(url)
     },
 
     async saveTask(form) {
@@ -215,6 +243,25 @@ export default {
       } finally { this.isUploading = false }
     },
 
+    downloadTemplate() {
+      // CSV 양식 생성 후 다운로드
+      const headers = ['Group', 'Task', 'Subtask', 'Note', 'JIRA', 'Team', 'Assignee', 'Start Date', 'End Date', 'Progress']
+      const sample = [
+        ['기획', '', '신규 캐릭터 컨셉 기획', '캐릭터 배경 스토리 정의', 'EXAM-01', '기획팀', '기획자1', '2025-10-17', '2025-10-27', '100'],
+        ['디자인', '', '캐릭터 원화 작업', '컨셉 아트 제작', 'EXAM-02', '디자인팀', '디자인1', '2025-11-04', '2025-11-11', '80'],
+        ['개발(BE)', '', 'API 설계', '캐릭터 스킬 API 구현', '', '개발(BE)팀', 'BE개발1', '2025-11-12', '2025-11-30', '50'],
+      ]
+      const csvContent = [headers, ...sample]
+        .map(row => row.map(v => `"${v}"`).join(','))
+        .join('
+')
+      const BOM = '﻿'
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = 'wbs_업로드_양식.csv'
+      a.click(); URL.revokeObjectURL(url)
+    },
     sheetsToCsvUrl(url, sheetName) {
       // https://docs.google.com/spreadsheets/d/{ID}/edit... → CSV export URL
       const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
@@ -275,6 +322,8 @@ export default {
 }
 .upload-item { width:100%; background:none; border:none; padding:9px 12px; text-align:left; color:var(--text); font-size:13px; cursor:pointer; border-radius:6px; font-family:inherit; font-weight:500 }
 .upload-item:hover { background:var(--bg3) }
+.upload-divider { height:1px; background:var(--border); margin:3px 0 }
+.upload-divider { border:none; border-top:1px solid var(--border); margin:4px 0 }
 
 /* 모달 */
 .overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:300; display:flex; align-items:center; justify-content:center }

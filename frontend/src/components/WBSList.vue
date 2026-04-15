@@ -47,10 +47,10 @@
 
       <div v-for="proj in paged" :key="proj.id" class="proj-row" @click="$emit('select', proj)">
         <div class="proj-name-cell" style="flex:2">
-          <div class="proj-name">{{ proj.name }}</div>
+          <div class="proj-name">{{ proj.name.slice(0,200) }}</div>
           <div class="proj-desc">{{ proj.description || '설명 없음' }}</div>
         </div>
-        <div class="proj-pm" style="width:120px;text-align:center">{{ proj.pm || '-' }}</div>
+        <div class="proj-pm" style="width:120px;text-align:center;word-break:break-word;white-space:normal">{{ proj.pm || '-' }}</div>
         <div style="width:100px;display:flex;justify-content:center">
           <span class="status-badge" :class="STATUS_CLASS[proj.status || 'pending']">
             {{ STATUS_LABEL[proj.status || 'pending'] }}
@@ -59,7 +59,7 @@
         <div style="width:150px;display:flex;justify-content:center">
           <div class="prog-row">
             <div class="prog-wrap">
-              <div class="prog-fill" :class="pbClass(proj.status)" :style="{width:(proj.progress||0)+'%'}"></div>
+              <div class="prog-fill" :style="{ width:(proj.progress||0)+'%', background: progColor(proj.progress||0) }"></div>
             </div>
             <span class="prog-text">{{ proj.progress || 0 }}%</span>
           </div>
@@ -122,6 +122,13 @@ export default {
   beforeUnmount() { document.removeEventListener('click', this.closeMenu) },
   methods: {
     pbClass(s) { return { done:'pf-green', progress:'pf-blue', risk:'pf-yellow', overdue:'pf-red' }[s] || 'pf-blue' },
+    progColor(p) {
+      if (p >= 100) return 'var(--green)'
+      if (p >= 70)  return '#4ade80'
+      if (p >= 40)  return 'var(--yellow)'
+      if (p > 0)    return '#fb923c'
+      return 'var(--muted)'
+    },
     toggleMenu(id) { this.activeMenuId = (this.activeMenuId === id) ? null : id },
     closeMenu() { this.activeMenuId = null },
     handleEdit(p) { this.$emit('edit', p); this.closeMenu() },
@@ -133,12 +140,14 @@ export default {
 <style scoped>
 .list-page { padding: 32px }
 .list-card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); position: relative; }
-.list-header { border-top-left-radius: 16px; border-top-right-radius: 16px; display:flex; align-items:center; gap:16px; padding:20px 24px; border-bottom:1px solid var(--border); background:var(--bg3) }
-.search-wrap { flex:1; display:flex; align-items:center; gap:12px; background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:12px 16px }
-.search-icon { width:20px; height:20px; color:var(--muted) }
-.search-input { background:transparent; border:none; outline:none; color:var(--text); font-size:16px; flex:1; font-family:inherit }
-.clear-btn { background:none; border:none; color:var(--muted); cursor:pointer; padding:0 4px; font-size:16px }
-.filter-select { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:10px 16px; color:var(--text); font-size:15px; outline:none }
+.list-header { border-top-left-radius: 16px; border-top-right-radius: 16px; display:flex; align-items:center; gap:12px; padding:16px 24px; border-bottom:1px solid var(--border); background:var(--bg3); flex-wrap:wrap }
+.search-wrap { flex:1; min-width:200px; display:flex; align-items:center; gap:12px; background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:10px 16px }
+.search-icon { width:18px; height:18px; color:var(--muted); flex-shrink:0 }
+.search-input { background:transparent; border:none; outline:none; color:var(--text); font-size:14px; flex:1; font-family:inherit }
+.clear-btn { background:none; border:none; color:var(--muted); cursor:pointer; padding:0 4px; font-size:14px; flex-shrink:0 }
+.header-right { display:flex; align-items:center; gap:10px; flex-shrink:0 }
+.count-label  { font-size:13px; color:var(--muted); white-space:nowrap }
+.filter-select { background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:8px 12px; color:var(--text); font-size:13px; outline:none; cursor:pointer }
 
 .col-header { display:flex; align-items:center; padding:16px 24px; background:var(--bg3); border-bottom:1px solid var(--border) }
 .col-header span { font-size:15px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em }
