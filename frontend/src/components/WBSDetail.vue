@@ -36,6 +36,7 @@
         </div>
 
         <button class="btn btn-ghost btn-sm" @click="$emit('edit-project', project)">프로젝트 수정</button>
+        <button class="btn btn-danger-ghost btn-sm" @click="confirmDeleteAll" v-if="tasks.length">🗑 전체 삭제</button>
         <button class="btn btn-primary btn-sm" @click="openAdd">+ 태스크 추가</button>
       </div>
     </div>
@@ -287,6 +288,21 @@ export default {
       document.body.removeChild(a); URL.revokeObjectURL(url)
     },
 
+    async confirmDeleteAll() {
+      if (!confirm(`태스크 ${this.tasks.length}개를 전체 삭제하시겠습니까?\n삭제 전 자동으로 백업됩니다.`)) return
+      try {
+        // 스냅샷 저장 후 전체 삭제
+        await api.saveSnapshotBeforeDelete(this.project.id)
+        for (const t of this.tasks) {
+          await api.deleteTask(this.project.id, t.id)
+        }
+        this.$emit('toast', { msg: '전체 태스크가 삭제되었습니다', type: 'info' })
+        await this.loadTasks(); this.$emit('refresh-projects')
+      } catch(e) {
+        this.$emit('toast', { msg: '삭제 실패: ' + e.message, type: 'err' })
+      }
+    },
+
     async loadSnapshots() {
       try {
         this.snapshots = await api.getSnapshots(this.project.id)
@@ -353,6 +369,7 @@ export default {
 .btn-primary{ background:var(--amber); color:#0a0800 }.btn-primary:hover{ background:#f0b85a }
 .btn-ghost  { background:transparent; color:var(--muted); border:1px solid var(--border2) }.btn-ghost:hover{ background:var(--bg3); color:var(--text) }
 .btn-danger { background:var(--red); color:#fff }.btn-danger:hover{ opacity:.85 }
+.btn-danger-ghost { background:transparent; color:var(--red); border:1px solid var(--red) }.btn-danger-ghost:hover{ background:var(--red-dim) }
 .btn-sm     { padding:6px 12px; font-size:12px }
 .btn:disabled{ opacity:.5; cursor:not-allowed }
 

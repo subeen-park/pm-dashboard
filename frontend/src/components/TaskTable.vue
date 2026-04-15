@@ -100,7 +100,7 @@
 
               <td class="action-cell">
                 <div class="menu-wrapper" @click.stop>
-                  <button class="dot-btn" @click="toggleMenu(t.id)">
+                  <button class="dot-btn" @click="toggleMenu(t.id, $event)">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                       <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
                     </svg>
@@ -208,7 +208,19 @@ export default {
         return 'Link'
       } catch { return 'Link' }
     },
-    toggleMenu(id) { this.activeMenuId = (this.activeMenuId === id) ? null : id },
+    toggleMenu(id, event) {
+      if (this.activeMenuId === id) { this.activeMenuId = null; return }
+      this.activeMenuId = id
+      this.$nextTick(() => {
+        const btn = event.currentTarget
+        const rect = btn.getBoundingClientRect()
+        const menu = this.$el.querySelector('.dropdown-menu')
+        if (menu) {
+          menu.style.top  = (rect.bottom + 4) + 'px'
+          menu.style.left = (rect.right - 88) + 'px'
+        }
+      })
+    },
     closeMenu()    { this.activeMenuId = null },
     handleEdit(t)  { this.$emit('edit', t); this.closeMenu() },
     handleDelete(t){
@@ -242,8 +254,8 @@ export default {
 .sort-btn   { padding:4px 10px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; font-family:inherit; transition:all .15s }
 .sort-btn.on{ background:var(--bg4); color:var(--text); border-color:var(--border) }
 
-.wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:visible }
-.wbs-table { width:100%; border-collapse:collapse; table-layout:auto }
+.wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden }
+.wbs-table { width:100%; border-collapse:collapse; table-layout:auto; min-width:600px }
 .wbs-table th { background:var(--bg3); padding:10px 12px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap }
 .wbs-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; word-break:keep-all }
 .wbs-table tr:last-child td { border-bottom:none }
@@ -305,16 +317,16 @@ export default {
 .row-focused td { background:rgba(239,68,68,.07) !important }
 
 /* 3dot */
-.action-cell  { text-align:center; position:relative; overflow:visible !important }
-.menu-wrapper { position:relative; display:inline-block }
+.action-cell  { text-align:center; position:relative }
+.menu-wrapper { position:static; display:inline-block }
 .dot-btn      { background:none; border:none; color:var(--muted); cursor:pointer; padding:5px; border-radius:5px; display:flex; align-items:center }
 .dot-btn:hover{ background:var(--bg4); color:var(--text) }
 .dropdown-menu{
-  position:absolute; right:0; top:32px;
+  position:fixed;
   background:var(--bg2); border:1px solid var(--border2);
   border-radius:8px; padding:4px; z-index:999;
   min-width:88px;
-  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
   display:flex; flex-direction:column; gap:2px
 }
 .dropdown-item{ width:100%; background:none; border:none; padding:7px 10px; text-align:left; color:var(--text); font-size:13px; cursor:pointer; border-radius:5px; font-weight:500; font-family:inherit }

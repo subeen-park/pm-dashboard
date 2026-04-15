@@ -325,6 +325,14 @@ def save_snapshot(pid, label):
             """, (pid,))
         conn.commit()
 
+@app.route('/api/projects/<pid>/snapshots/save', methods=['POST'])
+def manual_save_snapshot(pid):
+    try:
+        save_snapshot(pid, f'수동 백업 ({datetime.now().strftime("%m/%d %H:%M")})')
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/projects/<pid>/snapshots', methods=['GET'])
 def get_snapshots(pid):
     with get_conn() as conn:
@@ -518,7 +526,12 @@ def health():
     return jsonify({'ok': True})
 
 # ── start ─────────────────────────────────────────────────
-if __name__ == '__main__':
+try:
     init_db()
+    print("✅ DB 초기화 완료")
+except Exception as e:
+    print(f"⚠️ DB 초기화 실패: {e}")
+
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
