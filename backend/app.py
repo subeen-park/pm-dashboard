@@ -13,43 +13,61 @@ CORS(app)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 def get_conn():
-    url = DATABASE_URL
-    if not url:
-        raise Exception("DATABASE_URL이 없습니다")
-    # Render는 postgres:// 로 주는데 psycopg2는 postgresql:// 필요
-    if url.startswith('postgres://'):
-        url = url.replace('postgres://', 'postgresql://', 1)
-    return psycopg2.connect(url, cursor_factory=RealDictCursor)
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def init_db():
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS projects (
-            id TEXT PRIMARY KEY, name TEXT NOT NULL,
-            description TEXT DEFAULT '', pm TEXT DEFAULT '',
-            end_date TEXT DEFAULT '', created_at TEXT DEFAULT ''
-        );
-        CREATE TABLE IF NOT EXISTS tasks (
-            id TEXT PRIMARY KEY,
-            project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-            grp TEXT DEFAULT '', task TEXT NOT NULL,
-            assignee TEXT DEFAULT '', start_date TEXT DEFAULT '',
-            end_date TEXT DEFAULT '', progress INTEGER DEFAULT 0,
-            note TEXT DEFAULT '', jira TEXT DEFAULT '', created_at TEXT DEFAULT ''
-        );
-        CREATE TABLE IF NOT EXISTS webhook (
-            id SERIAL PRIMARY KEY, type TEXT DEFAULT '',
-            token TEXT DEFAULT '', chat TEXT DEFAULT '', url TEXT DEFAULT ''
-        );
-        CREATE TABLE IF NOT EXISTS logs (
-            id SERIAL PRIMARY KEY, log_type TEXT DEFAULT '',
-            title TEXT DEFAULT '', detail TEXT DEFAULT '', created_at TEXT DEFAULT ''
-        );
-    """)
-    conn.commit()
-    cur.close()
-    conn.close()
+    """앱 시작 시 테이블 없으면 자동 생성"""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS projects (
+                    id          TEXT PRIMARY KEY,
+                    name        TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    pm          TEXT DEFAULT '',
+                    end_date    TEXT DEFAULT '',
+                    created_at  TEXT DEFAULT ''
+                );
+
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id          TEXT PRIMARY KEY,
+                    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    grp         TEXT DEFAULT '',
+                    task        TEXT NOT NULL,
+                    assignee    TEXT DEFAULT '',
+                    start_date  TEXT DEFAULT '',
+                    end_date    TEXT DEFAULT '',
+                    progress    INTEGER DEFAULT 0,
+                    note        TEXT DEFAULT '',
+                    jira        TEXT DEFAULT '',
+                    created_at  TEXT DEFAULT ''
+                );
+
+                CREATE TABLE IF NOT EXISTS webhook (
+                    id      SERIAL PRIMARY KEY,
+                    type    TEXT DEFAULT '',
+                    token   TEXT DEFAULT '',
+                    chat    TEXT DEFAULT '',
+                    url     TEXT DEFAULT ''
+                );
+
+                CREATE TABLE IF NOT EXISTS logs (
+                    id         SERIAL PRIMARY KEY,
+                    log_type   TEXT DEFAULT '',
+                    title      TEXT DEFAULT '',
+                    detail     TEXT DEFAULT '',
+                    created_at TEXT DEFAULT ''
+                );
+
+                CREATE TABLE IF NOT EXISTS task_snapshots (
+                    id          SERIAL PRIMARY KEY,
+                    project_id  TEXT NOT NULL,
+                    snapshot    TEXT NOT NULL,
+                    label       TEXT DEFAULT '',
+                    created_at  TEXT DEFAULT ''
+                );
+            """)
+        conn.commit()
 
 # ── helpers ──────────────────────────────────────────────
 def row_to_project(row):
@@ -283,6 +301,62 @@ def delete_task(pid, tid):
         conn.commit()
     return jsonify({'ok': True})
 
+# ── snapshot helpers ──────────────────────────────────────
+import json as _json
+
+def save_snapshot(pid, label):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM tasks WHERE project_id=%s ORDER BY created_at", (pid,))
+            rows = cur.fetchall()
+        tasks_data = [row_to_task(r) for r in rows]
+        now = datetime.now().strftime('%Y-%m-%d %H:%M')
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO task_snapshots (project_id, snapshot, label, created_at) VALUES (%s,%s,%s,%s)",
+                (pid, _json.dumps(tasks_data, ensure_ascii=False), label, now)
+            )
+            # 최대 10개 스냅샷 유지
+            cur.execute("""
+                DELETE FROM task_snapshots WHERE id IN (
+                    SELECT id FROM task_snapshots WHERE project_id=%s
+                    ORDER BY id DESC OFFSET 10
+                )
+            """, (pid,))
+        conn.commit()
+
+@app.route('/api/projects/<pid>/snapshots', methods=['GET'])
+def get_snapshots(pid):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, label, created_at FROM task_snapshots WHERE project_id=%s ORDER BY id DESC", (pid,))
+            rows = cur.fetchall()
+    return jsonify([{'id': r['id'], 'label': r['label'], 'created_at': r['created_at']} for r in rows])
+
+@app.route('/api/projects/<pid>/snapshots/<int:sid>/restore', methods=['POST'])
+def restore_snapshot(pid, sid):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT snapshot FROM task_snapshots WHERE id=%s AND project_id=%s", (sid, pid))
+            row = cur.fetchone()
+    if not row:
+        return jsonify({'error': '스냅샷을 찾을 수 없습니다'}), 404
+    tasks_data = _json.loads(row['snapshot'])
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM tasks WHERE project_id=%s", (pid,))
+            for t in tasks_data:
+                tid = str(uuid.uuid4())[:8]
+                cur.execute(
+                    "INSERT INTO tasks (id,project_id,grp,task,assignee,start_date,end_date,progress,note,jira,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (tid, pid, t.get('group',''), t.get('task',''), t.get('assignee',''),
+                     t.get('startDate',''), t.get('endDate',''), t.get('progress',0),
+                     t.get('note',''), t.get('jira',''), now)
+                )
+        conn.commit()
+    return jsonify({'ok': True, 'count': len(tasks_data)})
+
 # ── excel upload ──────────────────────────────────────────
 @app.route('/api/projects/<pid>/tasks/upload', methods=['POST'])
 def upload_tasks_excel(pid):
@@ -312,8 +386,10 @@ def upload_tasks_excel(pid):
             return default
         count = 0
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        save_snapshot(pid, f'업로드 전 백업 ({datetime.now().strftime("%m/%d %H:%M")})')
         with get_conn() as conn:
             with conn.cursor() as cur:
+                cur.execute("DELETE FROM tasks WHERE project_id=%s", (pid,))
                 for _, row in df.iterrows():
                     if not any(str(v).strip() for v in row.values): continue
                     t_name = get_val(row, ['Task','태스크명','태스크','작업명'])
@@ -442,12 +518,7 @@ def health():
     return jsonify({'ok': True})
 
 # ── start ─────────────────────────────────────────────────
-try:
-    init_db()
-    print("✅ DB 초기화 완료")
-except Exception as e:
-    print(f"⚠️ DB 초기화 실패 (나중에 재시도): {e}")
-
 if __name__ == '__main__':
+    init_db()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

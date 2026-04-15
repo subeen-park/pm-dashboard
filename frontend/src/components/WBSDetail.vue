@@ -12,13 +12,12 @@
           <input v-model="taskSearch" placeholder="태스크, 담당자 검색..." />
         </div>
 
-        <!-- 업로드 드롭다운 -->
         <div class="upload-wrap" ref="uploadWrap">
           <button class="btn btn-ghost btn-sm" @click="showUploadMenu=!showUploadMenu" :disabled="isUploading">
             {{ isUploading ? '⏳ 업로드 중...' : '업로드 ▾' }}
           </button>
           <div v-if="showUploadMenu" class="upload-menu">
-            <input type="file" ref="excelInput" style="display:none" accept=".xlsx,.xls,.csv" @change="handleFileUpload" />
+            <input type="file" ref="excelInput" style="display:none" accept=".xlsx,.xls,.csv" @change="onFileSelected" />
             <button class="upload-item" @click="$refs.excelInput.click(); showUploadMenu=false">
               📄 엑셀 파일 업로드
             </button>
@@ -29,6 +28,10 @@
             <button class="upload-item" @click="downloadTemplate(); showUploadMenu=false">
               ⬇️ 업로드 양식 다운받기
             </button>
+            <div class="upload-divider"></div>
+            <button class="upload-item" @click="showHistory=true; loadSnapshots(); showUploadMenu=false">
+              🕐 업로드 기록 / 원복
+            </button>
           </div>
         </div>
 
@@ -38,66 +41,89 @@
     </div>
 
     <div class="detail-body">
-      <!-- 메트릭 -->
       <div class="metrics">
         <div class="mc"><div class="mc-label">전체</div><div class="mc-val" style="color:var(--blue)">{{ tasks.length }}</div></div>
         <div class="mc"><div class="mc-label">진행중</div><div class="mc-val" style="color:var(--green)">{{ cnt('progress') + cnt('done') }}</div></div>
-        <div class="mc" :title="'마감일 7일 이내 미완료 태스크'">
+        <div class="mc">
           <div class="mc-label">리스크 <span class="mc-hint">D-7 이내</span></div>
           <div class="mc-val" style="color:var(--yellow)">{{ cnt('risk') }}</div>
         </div>
-        <div class="mc mc-clickable" @click="focusOverdue" title="클릭하면 지연 태스크로 이동">
+        <div class="mc mc-clickable" @click="focusOverdue" title="클릭하면 지연 태스크로 이동합니다">
           <div class="mc-label">지연 <span class="mc-arrow">↓</span></div>
           <div class="mc-val" style="color:var(--red)">{{ cnt('overdue') }}</div>
           <div v-if="cnt('overdue')" class="mc-sub">클릭해서 확인</div>
         </div>
       </div>
 
-      <!-- 탭 -->
       <div class="tabs">
         <div v-for="t in TABS" :key="t.key" class="tab" :class="{on: activeTab===t.key}" @click="activeTab=t.key">
           {{ t.label }}
         </div>
       </div>
 
-      <task-table
-        v-if="activeTab==='tasks'"
-        :tasks="tasks"
-        :search="taskSearch"
-        :focus-overdue-at="focusOverdueAt"
-        :loading="tasksLoading"
-        @edit="openEdit"
-        @delete="deleteTask"
-      />
+      <task-table v-if="activeTab==='tasks'" :tasks="tasks" :search="taskSearch"
+        :focus-overdue-at="focusOverdueAt" :loading="tasksLoading"
+        @edit="openEdit" @delete="deleteTask" />
       <gantt-chart v-if="activeTab==='gantt'" :tasks="tasks" />
       <notif-panel v-if="activeTab==='notif'" :tasks="tasks" :logs="logs"
         @toast="$emit('toast',$event)" @reload-logs="$emit('reload-logs')" />
     </div>
 
-    <!-- 태스크 폼 -->
     <task-form v-model="showForm" :edit-task="editingTask" :project-id="project.id"
       @save="saveTask" @delete="deleteTask" />
+
+    <!-- 업로드 확인 모달 -->
+    <div v-if="showUploadConfirm" class="overlay">
+      <div class="modal">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">기존 태스크를 삭제하고 업로드할까요?</div>
+        <p class="modal-desc">
+          현재 <b>{{ tasks.length }}개</b>의 태스크가 등록되어 있습니다.<br>
+          업로드 시 기존 데이터는 <b>자동 백업</b>되고, 새 데이터로 교체됩니다.<br>
+          업로드 기록에서 언제든 원복할 수 있어요.
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="cancelUpload">취소</button>
+          <button class="btn btn-danger" @click="confirmUpload">교체하기</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Google Sheets 모달 -->
     <div v-if="showSheetsModal" class="overlay" @click.self="showSheetsModal=false">
       <div class="modal">
         <div class="modal-title">Google Sheets 링크로 업로드</div>
-        <p class="modal-desc">
-          Google Sheets를 <b>링크가 있는 모든 사용자 — 뷰어</b> 공유로 설정 후 URL을 붙여넣으세요.
-        </p>
+        <p class="modal-desc">Google Sheets를 <b>링크가 있는 모든 사용자 — 뷰어</b> 공유 설정 후 URL을 붙여넣으세요.</p>
         <div class="field">
           <label>Google Sheets URL</label>
           <input v-model="sheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/..." />
         </div>
-        <div class="field">
-          <label>시트 이름 (선택, 기본: 첫 번째 시트)</label>
-          <input v-model="sheetsName" placeholder="Sheet1" />
-        </div>
         <div class="modal-actions">
           <button class="btn btn-ghost" @click="showSheetsModal=false">취소</button>
-          <button class="btn btn-primary" @click="handleSheetsUpload" :disabled="isUploading">
-            {{ isUploading ? '가져오는 중...' : '가져오기' }}
-          </button>
+          <button class="btn btn-primary" @click="onSheetsConfirmRequest" :disabled="isUploading">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 히스토리 / 원복 모달 -->
+    <div v-if="showHistory" class="overlay" @click.self="showHistory=false">
+      <div class="modal modal-wide">
+        <div class="modal-title">🕐 업로드 기록 / 원복</div>
+        <p class="modal-desc">업로드 전 자동 저장된 백업 목록이에요. 원하는 시점으로 원복할 수 있어요.</p>
+        <div v-if="snapshots.length === 0" class="empty-state">저장된 백업이 없습니다</div>
+        <div v-else class="snapshot-list">
+          <div v-for="s in snapshots" :key="s.id" class="snapshot-row">
+            <div class="snapshot-info">
+              <div class="snapshot-label">{{ s.label }}</div>
+              <div class="snapshot-time">{{ s.created_at }}</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" @click="restoreSnapshot(s)" :disabled="isRestoring">
+              {{ isRestoring && restoringId===s.id ? '복원 중...' : '이 시점으로 원복' }}
+            </button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="showHistory=false">닫기</button>
         </div>
       </div>
     </div>
@@ -128,18 +154,21 @@ export default {
       tasks: [], activeTab: 'tasks', showForm: false,
       editingTask: null, taskSearch: '', TABS,
       isUploading: false, showUploadMenu: false,
-      showSheetsModal: false, sheetsUrl: '', sheetsName: '',
-      focusOverdueAt: 0,
-      tasksLoading: true,
+      showSheetsModal: false, sheetsUrl: '',
+      focusOverdueAt: 0, tasksLoading: true,
+      // 업로드 확인
+      showUploadConfirm: false,
+      pendingFile: null, pendingSheetsUrl: null,
+      // 히스토리
+      showHistory: false, snapshots: [],
+      isRestoring: false, restoringId: null,
     }
   },
   async mounted() {
     await this.loadTasks()
     document.addEventListener('click', this.closeUploadMenu)
   },
-  beforeUnmount() {
-    document.removeEventListener('click', this.closeUploadMenu)
-  },
+  beforeUnmount() { document.removeEventListener('click', this.closeUploadMenu) },
   watch: { project() { this.loadTasks() } },
   methods: {
     async loadTasks() {
@@ -156,88 +185,139 @@ export default {
       if (this.activeTab !== 'tasks') this.activeTab = 'tasks'
       this.$nextTick(() => { this.focusOverdueAt++ })
     },
-
     closeUploadMenu(e) {
       if (this.$refs.uploadWrap && !this.$refs.uploadWrap.contains(e.target)) {
         this.showUploadMenu = false
       }
     },
 
+    // ── 파일 선택 시 확인창 표시 ──
+    onFileSelected(event) {
+      var file = event.target.files[0]
+      if (!file) return
+      if (this.tasks.length > 0) {
+        this.pendingFile = file
+        this.showUploadConfirm = true
+      } else {
+        this.doFileUpload(file)
+      }
+      event.target.value = ''
+    },
+
+    onSheetsConfirmRequest() {
+      if (!this.sheetsUrl.trim()) { this.$emit('toast', {msg:'URL을 입력하세요', type:'err'}); return }
+      if (this.tasks.length > 0) {
+        this.pendingSheetsUrl = this.sheetsUrl
+        this.showSheetsModal = false
+        this.showUploadConfirm = true
+      } else {
+        this.showSheetsModal = false
+        this.doSheetsUpload(this.sheetsUrl)
+      }
+    },
+
+    confirmUpload() {
+      this.showUploadConfirm = false
+      if (this.pendingFile) {
+        this.doFileUpload(this.pendingFile)
+        this.pendingFile = null
+      } else if (this.pendingSheetsUrl) {
+        this.doSheetsUpload(this.pendingSheetsUrl)
+        this.pendingSheetsUrl = null
+      }
+    },
+    cancelUpload() {
+      this.showUploadConfirm = false
+      this.pendingFile = null
+      this.pendingSheetsUrl = null
+    },
+
+    async doFileUpload(file) {
+      this.isUploading = true
+      try {
+        var res = await api.uploadExcel(this.project.id, file)
+        this.$emit('toast', {msg: res.count + '개 태스크 등록 완료', type:'ok'})
+        await this.loadTasks(); this.$emit('refresh-projects')
+      } catch(e) {
+        this.$emit('toast', {msg: '업로드 실패: ' + e.message, type:'err'})
+      } finally { this.isUploading = false }
+    },
+
+    async doSheetsUpload(url) {
+      var csvUrl = this.sheetsToCsvUrl(url)
+      if (!csvUrl) { this.$emit('toast', {msg:'올바른 Google Sheets URL이 아닙니다', type:'err'}); return }
+      this.isUploading = true
+      try {
+        var res = await api.uploadSheetsUrl(this.project.id, csvUrl)
+        this.$emit('toast', {msg: res.count + '개 태스크 등록 완료', type:'ok'})
+        this.sheetsUrl = ''
+        await this.loadTasks(); this.$emit('refresh-projects')
+      } catch(e) {
+        this.$emit('toast', {msg: '가져오기 실패: ' + e.message, type:'err'})
+      } finally { this.isUploading = false }
+    },
+
+    sheetsToCsvUrl(url) {
+      var match = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
+      if (!match) return null
+      var id = match[1]
+      var gidMatch = url.match(/gid=(\d+)/)
+      var gid = gidMatch ? gidMatch[1] : '0'
+      return 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=csv&gid=' + gid
+    },
+
     downloadTemplate() {
-      const headers = ['Group', 'Task', 'Subtask', 'Note', 'JIRA', 'Team', 'Assignee', 'Start Date', 'End Date', 'Progress']
-      const sample = [
+      var headers = ['Group', 'Task', 'Subtask', 'Note', 'JIRA', 'Team', 'Assignee', 'Start Date', 'End Date', 'Progress']
+      var sample = [
         ['기획', '', '신규 기능 기획서 작성', '요구사항 정의 포함', 'PROJ-001', '기획팀', '기획자1', '2025-10-17', '2025-10-27', '100'],
         ['디자인', '', 'UI 화면 설계', '와이어프레임 포함', '', '디자인팀', '디자인1', '2025-10-20', '2025-11-05', '80'],
         ['개발(BE)', '', 'API 개발', '', 'PROJ-002', '개발(BE)팀', '백엔드1', '2025-11-01', '2025-11-20', '60'],
         ['개발(FE)', '', 'UI 구현', '', '', '개발(FE)팀', '프론트1', '2025-11-10', '2025-11-30', '0'],
         ['QA', '', '기능 테스트', '', '', 'QA팀', 'QA1', '2025-12-01', '2025-12-10', '0'],
       ]
-      const sep = '\r\n'
-      const rows = [headers, ...sample].map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join(sep)
-      const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url; a.download = 'wbs_업로드_양식.csv'
-      a.click(); URL.revokeObjectURL(url)
+      var rows = [headers].concat(sample).map(function(row) {
+        return row.map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"' }).join(',')
+      })
+      var csv = '\uFEFF' + rows.join('\r\n')
+      var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'})
+      var url = URL.createObjectURL(blob)
+      var a = document.createElement('a')
+      a.href = url; a.download = 'wbs_upload_template.csv'
+      document.body.appendChild(a); a.click()
+      document.body.removeChild(a); URL.revokeObjectURL(url)
+    },
+
+    async loadSnapshots() {
+      try {
+        this.snapshots = await api.getSnapshots(this.project.id)
+      } catch(e) { this.snapshots = [] }
+    },
+
+    async restoreSnapshot(s) {
+      if (!confirm(s.label + '\n\n이 시점으로 원복하시겠습니까? 현재 데이터는 백업됩니다.')) return
+      this.isRestoring = true; this.restoringId = s.id
+      try {
+        var res = await api.restoreSnapshot(this.project.id, s.id)
+        this.$emit('toast', {msg: res.count + '개 태스크로 원복 완료', type:'ok'})
+        await this.loadTasks(); this.$emit('refresh-projects')
+        await this.loadSnapshots()
+      } catch(e) {
+        this.$emit('toast', {msg: '원복 실패: ' + e.message, type:'err'})
+      } finally { this.isRestoring = false; this.restoringId = null }
     },
 
     async saveTask(form) {
       if (form.id) await api.updateTask(this.project.id, form.id, form)
       else         await api.createTask(this.project.id, form)
       this.showForm = false
-      await this.loadTasks()
-      this.$emit('refresh-projects')
-      this.$emit('toast', { msg: form.id ? '태스크가 수정되었습니다' : '태스크가 추가되었습니다', type:'ok' })
+      await this.loadTasks(); this.$emit('refresh-projects')
+      this.$emit('toast', {msg: form.id ? '태스크가 수정되었습니다' : '태스크가 추가되었습니다', type:'ok'})
     },
     async deleteTask(tid) {
       await api.deleteTask(this.project.id, tid)
       this.showForm = false
-      await this.loadTasks()
-      this.$emit('refresh-projects')
-      this.$emit('toast', { msg:'삭제되었습니다', type:'info' })
-    },
-
-    async handleFileUpload(event) {
-      const file = event.target.files[0]
-      if (!file) return
-      this.isUploading = true
-      try {
-        const res = await api.uploadExcel(this.project.id, file)
-        this.$emit('toast', { msg: res.count + '개 태스크 등록 완료', type: 'ok' })
-        await this.loadTasks(); this.$emit('refresh-projects')
-      } catch (e) {
-        this.$emit('toast', { msg: '업로드 실패: ' + e.message, type: 'err' })
-      } finally {
-        this.isUploading = false; event.target.value = ''
-      }
-    },
-
-    async handleSheetsUpload() {
-      if (!this.sheetsUrl.trim()) {
-        this.$emit('toast', { msg: 'URL을 입력하세요', type: 'err' }); return
-      }
-      const csvUrl = this.sheetsToCsvUrl(this.sheetsUrl, this.sheetsName)
-      if (!csvUrl) {
-        this.$emit('toast', { msg: '올바른 Google Sheets URL이 아닙니다', type: 'err' }); return
-      }
-      this.isUploading = true
-      try {
-        const res = await api.uploadSheetsUrl(this.project.id, csvUrl)
-        this.$emit('toast', { msg: res.count + '개 태스크 등록 완료', type: 'ok' })
-        this.showSheetsModal = false; this.sheetsUrl = ''; this.sheetsName = ''
-        await this.loadTasks(); this.$emit('refresh-projects')
-      } catch (e) {
-        this.$emit('toast', { msg: '가져오기 실패: ' + e.message, type: 'err' })
-      } finally { this.isUploading = false }
-    },
-
-    sheetsToCsvUrl(url, sheetName) {
-      const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
-      if (!match) return null
-      const id = match[1]
-      const gidMatch = url.match(/gid=(\d+)/)
-      const gid = gidMatch ? gidMatch[1] : '0'
-      return 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=csv&gid=' + gid
+      await this.loadTasks(); this.$emit('refresh-projects')
+      this.$emit('toast', {msg:'삭제되었습니다', type:'info'})
     },
   }
 }
@@ -246,8 +326,7 @@ export default {
 <style scoped>
 .detail-bar { background:var(--bg2); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px }
 .breadcrumb { display:flex; align-items:center; gap:10px; font-size:14px }
-.bc-link    { color:var(--amber); cursor:pointer }
-.bc-link:hover{ text-decoration:underline }
+.bc-link    { color:var(--amber); cursor:pointer }.bc-link:hover{ text-decoration:underline }
 .bc-sep     { color:var(--faint) }
 .bc-cur     { color:var(--text); font-weight:600 }
 .bar-right  { display:flex; align-items:center; gap:10px }
@@ -273,28 +352,32 @@ export default {
 .btn        { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:7px; font-size:13px; font-family:inherit; cursor:pointer; border:none; font-weight:500; transition:all .15s }
 .btn-primary{ background:var(--amber); color:#0a0800 }.btn-primary:hover{ background:#f0b85a }
 .btn-ghost  { background:transparent; color:var(--muted); border:1px solid var(--border2) }.btn-ghost:hover{ background:var(--bg3); color:var(--text) }
+.btn-danger { background:var(--red); color:#fff }.btn-danger:hover{ opacity:.85 }
 .btn-sm     { padding:6px 12px; font-size:12px }
 .btn:disabled{ opacity:.5; cursor:not-allowed }
 
 .upload-wrap { position:relative }
-.upload-menu {
-  position:absolute; right:0; top:36px;
-  background:var(--bg2); border:1px solid var(--border2);
-  border-radius:8px; padding:4px; z-index:200; min-width:180px;
-  box-shadow:0 2px 8px rgba(0,0,0,.12);
-  display:flex; flex-direction:column; gap:2px
-}
+.upload-menu { position:absolute; right:0; top:36px; background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:4px; z-index:200; min-width:180px; box-shadow:0 2px 8px rgba(0,0,0,.12); display:flex; flex-direction:column; gap:2px }
 .upload-item { width:100%; background:none; border:none; padding:9px 12px; text-align:left; color:var(--text); font-size:13px; cursor:pointer; border-radius:6px; font-family:inherit; font-weight:500 }
 .upload-item:hover { background:var(--bg3) }
 .upload-divider { height:1px; background:var(--border); margin:3px 0 }
 
 .overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:300; display:flex; align-items:center; justify-content:center }
-.modal   { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; padding:24px; width:480px; max-width:90vw }
+.modal   { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; padding:28px; width:440px; max-width:90vw }
+.modal-wide { width:560px }
+.modal-icon  { font-size:32px; margin-bottom:12px }
 .modal-title { font-size:15px; font-weight:600; margin-bottom:8px }
-.modal-desc  { font-size:12px; color:var(--muted); margin-bottom:16px; line-height:1.6 }
+.modal-desc  { font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.7 }
 .field       { margin-bottom:12px }
 .field label { display:block; font-size:11px; color:var(--muted); margin-bottom:4px }
 .field input { width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:8px 10px; color:var(--text); font-size:13px; font-family:inherit; outline:none }
 .field input:focus { border-color:var(--amber) }
-.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:20px }
+
+.snapshot-list { display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; margin-bottom:8px }
+.snapshot-row  { display:flex; align-items:center; justify-content:space-between; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; gap:12px }
+.snapshot-info { flex:1 }
+.snapshot-label{ font-size:13px; font-weight:500; color:var(--text) }
+.snapshot-time { font-size:11px; color:var(--muted); margin-top:2px }
+.empty-state { text-align:center; padding:24px; color:var(--muted); font-size:13px }
 </style>

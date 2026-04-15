@@ -12,19 +12,20 @@
     </div>
 
     <div class="wbs-wrap">
+      <div style="overflow-x:auto">
       <table class="wbs-table">
         <thead>
           <tr>
-            <th style="width:60px">그룹</th>
-            <th style="min-width:180px">태스크</th>
-            <th style="width:90px">담당자</th>
-            <th style="width:100px">시작일</th>
-            <th style="width:140px">마감일</th>
-            <th style="width:110px">Jira</th>
-            <th style="width:130px">진행률</th>
-            <th style="width:80px">상태</th>
-            <th style="min-width:140px">메모</th>
-            <th style="width:50px"></th>
+            <th style="width:52px">그룹</th>
+            <th style="min-width:200px">태스크</th>
+            <th style="width:80px">담당자</th>
+            <th style="width:92px;white-space:nowrap">시작일</th>
+            <th style="width:92px;white-space:nowrap">마감일</th>
+            <th style="width:90px">Jira</th>
+            <th style="width:120px">진행률</th>
+            <th style="width:72px">상태</th>
+            <th style="min-width:120px">메모</th>
+            <th style="width:40px"></th>
           </tr>
         </thead>
         <tbody>
@@ -114,6 +115,7 @@
           </template>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 </template>
