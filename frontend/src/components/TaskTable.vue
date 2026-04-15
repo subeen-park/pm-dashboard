@@ -68,8 +68,8 @@
               <td class="cell-date muted" style="white-space:nowrap">{{ t.startDate || '-' }}</td>
 
               <!-- 마감일: 날짜만 표시 -->
-              <td v-if="!t.endDate" class="cell-text muted">-</td>
-              <td v-else class="cell-date" :class="dateClass(t)">{{ t.endDate }}</td>
+              <td v-if="!t.endDate" class="cell-text muted" style="white-space:nowrap">-</td>
+              <td v-else class="cell-date" :class="dateClass(t)" style="white-space:nowrap">{{ t.endDate }}</td>
 
               <td>
                 <template v-if="t.jira">
@@ -262,7 +262,7 @@ export default {
 
 /* 공통 셀 폰트 — 담당자 기준으로 통일 */
 .cell-text { font-size:13px; font-weight:400; font-family:'Noto Sans KR',sans-serif }
-.cell-date { font-size:13px; font-weight:400; font-family:'DM Mono',monospace }
+.cell-date { font-size:13px; font-weight:400; font-family:'DM Mono',monospace; white-space:nowrap }
 
 .task-name-cell { display:flex; align-items:center; gap:8px; flex-wrap:nowrap }
 .task-name  { font-size:13px; font-weight:600; color:var(--text); white-space:normal; line-height:1.4 }
