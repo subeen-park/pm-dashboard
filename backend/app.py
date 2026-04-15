@@ -13,6 +13,8 @@ CORS(app)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL 환경변수가 설정되지 않았습니다")
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def init_db():
@@ -452,7 +454,11 @@ def health():
     return jsonify({'ok': True})
 
 # ── start ─────────────────────────────────────────────────
-init_db() 
+try:
+    init_db()
+    print("✅ DB 초기화 완료")
+except Exception as e:
+    print(f"⚠️ DB 초기화 실패 (나중에 재시도): {e}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
