@@ -12,18 +12,16 @@
           <input v-model="taskSearch" placeholder="태스크, 담당자 검색..." />
         </div>
 
-        <!-- 업로드 메뉴 -->
+        <!-- 업로드 드롭다운 -->
         <div class="upload-wrap" ref="uploadWrap">
           <button class="btn btn-ghost btn-sm" @click="showUploadMenu=!showUploadMenu" :disabled="isUploading">
             {{ isUploading ? '⏳ 업로드 중...' : '업로드 ▾' }}
           </button>
           <div v-if="showUploadMenu" class="upload-menu">
-            <!-- 엑셀 파일 -->
             <input type="file" ref="excelInput" style="display:none" accept=".xlsx,.xls,.csv" @change="handleFileUpload" />
             <button class="upload-item" @click="$refs.excelInput.click(); showUploadMenu=false">
               📄 엑셀 파일 업로드
             </button>
-            <!-- 구글 시트 -->
             <button class="upload-item" @click="showSheetsModal=true; showUploadMenu=false">
               🔗 Google Sheets 링크
             </button>
@@ -44,12 +42,11 @@
       <div class="metrics">
         <div class="mc"><div class="mc-label">전체</div><div class="mc-val" style="color:var(--blue)">{{ tasks.length }}</div></div>
         <div class="mc"><div class="mc-label">진행중</div><div class="mc-val" style="color:var(--green)">{{ cnt('progress') + cnt('done') }}</div></div>
-        <div class="mc" :title="`마감일 7일 이내 미완료 태스크 ${cnt('risk')}건`">
+        <div class="mc" :title="'마감일 7일 이내 미완료 태스크'">
           <div class="mc-label">리스크 <span class="mc-hint">D-7 이내</span></div>
           <div class="mc-val" style="color:var(--yellow)">{{ cnt('risk') }}</div>
         </div>
-        <!-- 지연 카드: 클릭 시 다음 지연 태스크로 포커싱 -->
-        <div class="mc mc-clickable" @click="focusOverdue" :title="'클릭하면 지연 태스크로 이동합니다'">
+        <div class="mc mc-clickable" @click="focusOverdue" title="클릭하면 지연 태스크로 이동">
           <div class="mc-label">지연 <span class="mc-arrow">↓</span></div>
           <div class="mc-val" style="color:var(--red)">{{ cnt('overdue') }}</div>
           <div v-if="cnt('overdue')" class="mc-sub">클릭해서 확인</div>
@@ -154,17 +151,10 @@ export default {
     openAdd()      { this.editingTask = null; this.showForm = true },
     openEdit(task) { this.editingTask = {...task}; this.showForm = true },
 
-    // 지연 태스크 포커싱 — 클릭마다 +1해서 TaskTable 트리거
     focusOverdue() {
       if (!this.cnt('overdue')) return
-      if (this.activeTab !== 'tasks') {
-        this.activeTab = 'tasks'
-        this.$nextTick(() => {
-          setTimeout(() => { this.focusOverdueAt++ }, 100)
-        })
-      } else {
-        this.focusOverdueAt++
-      }
+      if (this.activeTab !== 'tasks') this.activeTab = 'tasks'
+      this.$nextTick(() => { this.focusOverdueAt++ })
     },
 
     closeUploadMenu(e) {
@@ -174,7 +164,6 @@ export default {
     },
 
     downloadTemplate() {
-      // 브라우저에서 직접 CSV 양식 다운로드
       const headers = ['Group', 'Task', 'Subtask', 'Note', 'JIRA', 'Team', 'Assignee', 'Start Date', 'End Date', 'Progress']
       const sample = [
         ['기획', '', '신규 기능 기획서 작성', '요구사항 정의 포함', 'PROJ-001', '기획팀', '기획자1', '2025-10-17', '2025-10-27', '100'],
@@ -183,8 +172,9 @@ export default {
         ['개발(FE)', '', 'UI 구현', '', '', '개발(FE)팀', '프론트1', '2025-11-10', '2025-11-30', '0'],
         ['QA', '', '기능 테스트', '', '', 'QA팀', 'QA1', '2025-12-01', '2025-12-10', '0'],
       ]
-      const csvRows = [headers.join(','), ...sample.map(r => r.map(v => `"${v}"`).join(','))]
-      const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      const sep = '\r\n'
+      const rows = [headers, ...sample].map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join(sep)
+      const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url; a.download = 'wbs_업로드_양식.csv'
@@ -207,69 +197,47 @@ export default {
       this.$emit('toast', { msg:'삭제되었습니다', type:'info' })
     },
 
-    // 엑셀 파일 업로드
     async handleFileUpload(event) {
       const file = event.target.files[0]
       if (!file) return
       this.isUploading = true
       try {
         const res = await api.uploadExcel(this.project.id, file)
-        this.$emit('toast', { msg: `${res.count}개 태스크 등록 완료`, type:'ok' })
+        this.$emit('toast', { msg: res.count + '개 태스크 등록 완료', type: 'ok' })
         await this.loadTasks(); this.$emit('refresh-projects')
       } catch (e) {
-        this.$emit('toast', { msg: `업로드 실패: ${e.message}`, type:'err' })
+        this.$emit('toast', { msg: '업로드 실패: ' + e.message, type: 'err' })
       } finally {
         this.isUploading = false; event.target.value = ''
       }
     },
 
-    // Google Sheets URL → CSV로 변환 후 업로드
     async handleSheetsUpload() {
       if (!this.sheetsUrl.trim()) {
-        this.$emit('toast', { msg: 'URL을 입력하세요', type:'err' }); return
+        this.$emit('toast', { msg: 'URL을 입력하세요', type: 'err' }); return
       }
       const csvUrl = this.sheetsToCsvUrl(this.sheetsUrl, this.sheetsName)
       if (!csvUrl) {
-        this.$emit('toast', { msg: '올바른 Google Sheets URL이 아닙니다', type:'err' }); return
+        this.$emit('toast', { msg: '올바른 Google Sheets URL이 아닙니다', type: 'err' }); return
       }
       this.isUploading = true
       try {
         const res = await api.uploadSheetsUrl(this.project.id, csvUrl)
-        this.$emit('toast', { msg: `${res.count}개 태스크 등록 완료`, type:'ok' })
+        this.$emit('toast', { msg: res.count + '개 태스크 등록 완료', type: 'ok' })
         this.showSheetsModal = false; this.sheetsUrl = ''; this.sheetsName = ''
         await this.loadTasks(); this.$emit('refresh-projects')
       } catch (e) {
-        this.$emit('toast', { msg: `가져오기 실패: ${e.message}`, type:'err' })
+        this.$emit('toast', { msg: '가져오기 실패: ' + e.message, type: 'err' })
       } finally { this.isUploading = false }
     },
 
-    downloadTemplate() {
-      // CSV 양식 생성 후 다운로드
-      const headers = ['Group', 'Task', 'Subtask', 'Note', 'JIRA', 'Team', 'Assignee', 'Start Date', 'End Date', 'Progress']
-      const sample = [
-        ['기획', '', '신규 캐릭터 컨셉 기획', '캐릭터 배경 스토리 정의', 'EXAM-01', '기획팀', '기획자1', '2025-10-17', '2025-10-27', '100'],
-        ['디자인', '', '캐릭터 원화 작업', '컨셉 아트 제작', 'EXAM-02', '디자인팀', '디자인1', '2025-11-04', '2025-11-11', '80'],
-        ['개발(BE)', '', 'API 설계', '캐릭터 스킬 API 구현', '', '개발(BE)팀', 'BE개발1', '2025-11-12', '2025-11-30', '50'],
-      ]
-      const csvContent = [headers, ...sample]
-        .map(row => row.map(v => `"${v}"`).join(','))
-        .join('
-')
-      const BOM = '﻿'
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url; a.download = 'wbs_업로드_양식.csv'
-      a.click(); URL.revokeObjectURL(url)
-    },
     sheetsToCsvUrl(url, sheetName) {
-      // https://docs.google.com/spreadsheets/d/{ID}/edit... → CSV export URL
       const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
       if (!match) return null
       const id = match[1]
       const gidMatch = url.match(/gid=(\d+)/)
       const gid = gidMatch ? gidMatch[1] : '0'
-      return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
+      return 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=csv&gid=' + gid
     },
   }
 }
@@ -288,7 +256,6 @@ export default {
 .inner-search input::placeholder{ color:var(--muted) }
 .detail-body{ padding:20px 24px }
 
-/* 메트릭 */
 .metrics  { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px }
 .mc       { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px 20px }
 .mc-label { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; display:flex; align-items:center; gap:6px }
@@ -299,19 +266,16 @@ export default {
 .mc-clickable { cursor:pointer; transition:background .15s; user-select:none }
 .mc-clickable:hover { background:var(--bg3) }
 
-/* 탭 */
 .tabs { display:flex; gap:4px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:5px; width:fit-content; margin-bottom:16px }
 .tab  { padding:8px 20px; border-radius:8px; cursor:pointer; font-size:14px; color:var(--muted); transition:all .15s; font-weight:500 }
 .tab.on { background:var(--bg4); color:var(--text) }
 
-/* 버튼 */
 .btn        { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:7px; font-size:13px; font-family:inherit; cursor:pointer; border:none; font-weight:500; transition:all .15s }
 .btn-primary{ background:var(--amber); color:#0a0800 }.btn-primary:hover{ background:#f0b85a }
 .btn-ghost  { background:transparent; color:var(--muted); border:1px solid var(--border2) }.btn-ghost:hover{ background:var(--bg3); color:var(--text) }
 .btn-sm     { padding:6px 12px; font-size:12px }
 .btn:disabled{ opacity:.5; cursor:not-allowed }
 
-/* 업로드 드롭다운 */
 .upload-wrap { position:relative }
 .upload-menu {
   position:absolute; right:0; top:36px;
@@ -323,9 +287,7 @@ export default {
 .upload-item { width:100%; background:none; border:none; padding:9px 12px; text-align:left; color:var(--text); font-size:13px; cursor:pointer; border-radius:6px; font-family:inherit; font-weight:500 }
 .upload-item:hover { background:var(--bg3) }
 .upload-divider { height:1px; background:var(--border); margin:3px 0 }
-.upload-divider { border:none; border-top:1px solid var(--border); margin:4px 0 }
 
-/* 모달 */
 .overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:300; display:flex; align-items:center; justify-content:center }
 .modal   { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; padding:24px; width:480px; max-width:90vw }
 .modal-title { font-size:15px; font-weight:600; margin-bottom:8px }
