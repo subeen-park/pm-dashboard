@@ -11,9 +11,7 @@
     </div>
 
     <header class="gnb">
-      <div class="logo" @click="goHome" style="cursor:pointer;">
-        <div class="logo-dot"></div>PM Suite
-      </div>
+      <div class="logo" @click="goHome" style="cursor:pointer;">PM Suite</div>
       <nav class="gnb-nav">
         <div class="gnb-item" :class="{active: view==='home'}" @click="goHome">홈</div>
         <div class="gnb-item" :class="{active: view==='list' || view==='detail'}" @click="goList">WBS 보드</div>
@@ -40,41 +38,42 @@
     <!-- 홈 랜딩 -->
     <div v-if="view==='home'" class="home-page">
       <div class="home-hero">
-        <div class="home-badge">PM Suite</div>
-        <h1 class="home-title">릴리즈부터 Jira까지,<br>PM 업무를 한 곳에서</h1>
-        <p class="home-desc">WBS 관리, 머지/빌드 추적, Jira 정체 분석을<br>하나의 대시보드에서 통합 관리하세요.</p>
-        <button class="btn btn-primary home-cta" @click="goList">WBS 보드 시작하기 →</button>
+        <p class="home-eyebrow">PM Suite &mdash; 릴리즈 관리 도구</p>
+        <h1 class="home-title">PM 업무를<br>한 곳에서.</h1>
+        <p class="home-desc">WBS 관리, 릴리즈 캘린더, 체크리스트,<br>머지 추적, Jira 분석을 통합하세요.</p>
+        <button class="btn btn-primary home-cta" @click="goList">WBS 보드 시작하기</button>
       </div>
+      <div class="home-divider"></div>
       <div class="home-cards">
         <div class="home-card" @click="goList">
-          <div class="home-card-icon">📋</div>
+          <div class="home-card-num">01</div>
           <div class="home-card-title">WBS 보드</div>
-          <div class="home-card-desc">WBS 프로젝트와 태스크를 관리하고, 간트 차트로 일정을 시각화해요. 지연/리스크 현황을 한눈에 파악하세요.</div>
-          <div class="home-card-action">시작하기 →</div>
+          <div class="home-card-desc">프로젝트와 태스크를 관리하고 간트 차트로 일정을 시각화</div>
+          <div class="home-card-action">시작하기</div>
         </div>
         <div class="home-card" @click="goPage('calendar')">
-          <div class="home-card-icon">📅</div>
+          <div class="home-card-num">02</div>
           <div class="home-card-title">릴리즈 캘린더</div>
-          <div class="home-card-desc">전체 프로젝트의 마감일과 마일스톤을 월별 캘린더로 확인하세요. 릴리즈 일정 충돌을 사전에 파악할 수 있어요.</div>
-          <div class="home-card-action">확인하기 →</div>
+          <div class="home-card-desc">전체 프로젝트 마감일과 마일스톤을 월별 캘린더로 확인</div>
+          <div class="home-card-action">확인하기</div>
         </div>
         <div class="home-card" @click="goPage('checklist')">
-          <div class="home-card-icon">✅</div>
+          <div class="home-card-num">03</div>
           <div class="home-card-title">릴리즈 체크리스트</div>
-          <div class="home-card-desc">릴리즈 전 QA, 배포, 롤백 플랜 등 필수 확인 항목을 팁별로 관리하세요. 팀원이 직접 체크하는 협업 철스팅 도구입니다.</div>
-          <div class="home-card-action">확인하기 →</div>
+          <div class="home-card-desc">릴리즈 전 QA, 배포, 롤백 플랜 등 팀 협업 체크리스트</div>
+          <div class="home-card-action">확인하기</div>
         </div>
         <div class="home-card" @click="goPage('merge')">
-          <div class="home-card-icon">🔀</div>
+          <div class="home-card-num">04</div>
           <div class="home-card-title">머지 트래커</div>
-          <div class="home-card-desc">릴리즈 버전별 머지/빌드 현황을 플랫폼별로 추적해요. 미빌드, 빌드완료, 머지 상태를 실시간으로 확인하세요.</div>
-          <div class="home-card-action">확인하기 →</div>
+          <div class="home-card-desc">버전별 머지/빌드 현황을 플랫폼별로 실시간 추적</div>
+          <div class="home-card-action">확인하기</div>
         </div>
         <div class="home-card" @click="goPage('jira')">
-          <div class="home-card-icon">🎯</div>
+          <div class="home-card-num">05</div>
           <div class="home-card-title">Jira 레이더</div>
-          <div class="home-card-desc">Jira 티켓의 정체 구간을 분석하고, 병목 담당자 Top 10을 추적해요. 일정 리스크를 사전에 파악하세요.</div>
-          <div class="home-card-action">분석하기 →</div>
+          <div class="home-card-desc">Jira 티켓 정체 구간과 병목 담당자 Top 10 분석</div>
+          <div class="home-card-action">분석하기</div>
         </div>
       </div>
     </div>
@@ -238,84 +237,84 @@ export default {
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#09090f;--bg2:#111118;--bg3:#18181f;--bg4:#1f1f28;
-  --amber:#e8a94a;--amber-dim:#7a5420;
-  --blue:#4a9eff;--blue-dim:#1a3d6a;
-  --green:#4ecb8d;--green-dim:#1a4a32;
-  --red:#ff6b6b;--red-dim:#5a1a1a;
-  --yellow:#f0c040;--yellow-dim:#5a4210;
-  --text:#e2e2ec;--muted:#7070a0;--faint:#3a3a55;
-  --border:#202030;--border2:#2a2a40;
+  --bg:#07070e;--bg2:#0e0e18;--bg3:#141420;--bg4:#1a1a28;
+  --amber:#c9943a;--amber-dim:rgba(201,148,58,.12);
+  --blue:#4a9eff;--blue-dim:rgba(74,158,255,.1);
+  --green:#3db87a;--green-dim:rgba(61,184,122,.1);
+  --red:#e05555;--red-dim:rgba(224,85,85,.1);
+  --yellow:#d4a843;--yellow-dim:rgba(212,168,67,.1);
+  --text:#dddde8;--muted:#55556a;--faint:#25253a;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
 }
 :root[data-theme="light"]{
-  --bg:#f4f6f8;--bg2:#ffffff;--bg3:#f9fafb;--bg4:#f3f4f6;
-  --amber:#f59f00;--amber-dim:#fff3bf;
-  --blue:#339af0;--blue-dim:#e7f5ff;
-  --green:#20c997;--green-dim:#e6fcf5;
-  --red:#ff6b6b;--red-dim:#ffe3e3;
-  --yellow:#fcc419;--yellow-dim:#fff9db;
-  --text:#212529;--muted:#868e96;--faint:#ced4da;
-  --border:#e9ecef;--border2:#dee2e6;
+  --bg:#f5f5f0;--bg2:#ffffff;--bg3:#f8f8f4;--bg4:#efefea;
+  --amber:#b07d28;--amber-dim:rgba(176,125,40,.08);
+  --blue:#2b7fd4;--blue-dim:rgba(43,127,212,.08);
+  --green:#1a9660;--green-dim:rgba(26,150,96,.08);
+  --red:#cc3333;--red-dim:rgba(204,51,51,.08);
+  --yellow:#b08820;--yellow-dim:rgba(176,136,32,.08);
+  --text:#1a1a24;--muted:#888898;--faint:#d8d8d0;
+  --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.12);
 }
 
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:15px;min-height:100vh;transition:background .3s,color .3s}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;min-height:100vh;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased}
 .app{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
 
 /* GNB */
-.gnb{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;transition:background .3s}
-.logo{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--amber);white-space:nowrap}
-.logo-dot{width:8px;height:8px;background:var(--amber);border-radius:50%;flex-shrink:0}
-.gnb-nav{display:flex;align-items:center;gap:4px;flex:1}
-.gnb-item{padding:8px 16px;border-radius:8px;font-size:14px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
-.gnb-item:hover{background:var(--bg3);color:var(--text)}
-.gnb-item.active{background:var(--bg4);color:var(--text);font-weight:500}
-.gnb-sub{color:var(--amber)!important;background:transparent!important;font-size:12px;padding:6px 8px;cursor:default}
-.gnb-right{display:flex;align-items:center;gap:12px;margin-left:auto}
-.last-saved{font-size:12px;color:var(--muted);white-space:nowrap}
-.theme-btn{background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s}
-.theme-btn:hover{background:var(--bg3);transform:scale(1.05)}
-.github-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);color:var(--muted);transition:all .2s;text-decoration:none}
-.github-btn:hover{background:var(--bg3);color:var(--text);transform:scale(1.05)}
+.gnb{background:var(--bg);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;transition:background .3s}
+.logo{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;margin-right:40px}
+.gnb-nav{display:flex;align-items:stretch;gap:0;flex:1;height:100%}
+.gnb-item{padding:0 16px;font-size:13px;color:var(--muted);cursor:pointer;transition:color .15s;white-space:nowrap;display:flex;align-items:center;position:relative;border-bottom:2px solid transparent}
+.gnb-item:hover{color:var(--text)}
+.gnb-item.active{color:var(--text);border-bottom-color:var(--amber)}
+.gnb-sub{color:var(--amber)!important;border-bottom:none!important;font-size:12px;cursor:default;opacity:.8}
+.gnb-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.last-saved{font-size:11px;color:var(--muted);white-space:nowrap}
+.theme-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .15s}
+.theme-btn:hover{color:var(--text);border-color:var(--border2)}
+.github-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1px solid var(--border2);color:var(--muted);transition:all .15s;text-decoration:none}
+.github-btn:hover{color:var(--text)}
 
 /* 버튼 */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;border:none;transition:all .15s;font-weight:500}
-.btn-primary{background:var(--amber);color:#0a0800}.btn-primary:hover{background:#f0b85a}
-.btn-sm{padding:7px 14px;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;border:none;transition:all .15s;font-weight:500;letter-spacing:.01em}
+.btn-primary{background:var(--amber);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-sm{padding:6px 14px;font-size:12px}
 
 /* 서버 깨우기 오버레이 */
-.waking-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center}
-.waking-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 48px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
-.waking-spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite}
-.waking-title{font-size:18px;font-weight:600;color:var(--text)}
-.waking-sub{font-size:13px;color:var(--muted)}
-.waking-dots{display:flex;gap:6px}
-.waking-dots span{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:dot-bounce .8s infinite alternate}
+.waking-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center}
+.waking-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:40px 52px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.waking-spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite}
+.waking-title{font-size:16px;font-weight:600;color:var(--text)}
+.waking-sub{font-size:12px;color:var(--muted)}
+.waking-dots{display:flex;gap:5px}
+.waking-dots span{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:dot-bounce .8s infinite alternate}
 .waking-dots span:nth-child(2){animation-delay:.2s}
 .waking-dots span:nth-child(3){animation-delay:.4s}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes dot-bounce{from{opacity:.3;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 
-/* 홈 랜딩 */
-.home-page{padding:60px 24px;max-width:1100px;margin:0 auto}
-.home-hero{text-align:center;padding:60px 0 80px}
-.home-badge{display:inline-block;background:var(--amber-dim);color:var(--amber);font-size:13px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:24px;font-family:'DM Mono',monospace}
-.home-title{font-size:42px;font-weight:700;line-height:1.3;margin-bottom:20px;color:var(--text)}
-.home-desc{font-size:16px;color:var(--muted);line-height:1.8;margin-bottom:36px}
-.home-cta{font-size:15px;padding:14px 32px;border-radius:10px}
-.home-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
-.home-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:12px}
-.home-card:hover{border-color:var(--amber);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
-.home-card-icon{font-size:32px}
-.home-card-title{font-size:18px;font-weight:600;color:var(--text)}
-.home-card-desc{font-size:13px;color:var(--muted);line-height:1.7;flex:1}
-.home-card-action{font-size:13px;color:var(--amber);font-weight:600}
+/* 홈 */
+.home-page{padding:0 48px 80px;max-width:1200px;margin:0 auto}
+.home-hero{padding:100px 0 80px;max-width:680px}
+.home-eyebrow{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:28px}
+.home-title{font-size:64px;font-weight:700;line-height:1.1;margin-bottom:24px;color:var(--text);letter-spacing:-.02em}
+.home-desc{font-size:15px;color:var(--muted);line-height:1.8;margin-bottom:40px;font-weight:300}
+.home-cta{font-size:13px;padding:11px 24px;border-radius:6px}
+.home-divider{height:1px;background:var(--border);margin-bottom:48px}
+.home-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.home-card{background:var(--bg2);padding:32px 28px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:16px;min-height:200px;position:relative}
+.home-card:hover{background:var(--bg3)}
+.home-card-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em}
+.home-card-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+.home-card-desc{font-size:12px;color:var(--muted);line-height:1.7;flex:1}
+.home-card-action{font-size:11px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
 
 /* 토스트 */
-.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:14px;animation:slideIn .2s ease;min-width:260px;line-height:1.4;color:var(--text)}
-.toast-ok{border-color:var(--green-dim);color:var(--green)}
-.toast-err{border-color:var(--red-dim);color:var(--red)}
-.toast-info{border-color:var(--blue-dim);color:var(--blue)}
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:13px;animation:slideIn .2s ease;min-width:240px;line-height:1.5;color:var(--text)}
+.toast-ok{border-left:3px solid var(--green)}
+.toast-err{border-left:3px solid var(--red)}
+.toast-info{border-left:3px solid var(--blue)}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>
