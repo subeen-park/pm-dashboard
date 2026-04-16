@@ -70,7 +70,7 @@
               :class="{ 'row-focused': focusedId===t.id }"
               :data-task-id="t.id">
               <td class="muted center">-</td>
-              <td class="task-name-cell" @click="showDetail(t)" style="cursor:pointer">
+              <td class="ellipsis task-name-cell" @click="showDetail(t)" style="cursor:pointer">
                 <span class="task-name" :title="t.task">{{ t.task }}</span>
                 <span v-if="t.endDate && isOverdue(t)" class="overdue-chip">
                   {{ Math.abs(diffDays(t.endDate)) }}일 지연
@@ -108,7 +108,7 @@
                 </span>
               </td>
 
-              <td class="note cell-text muted" :title="t.note" @click="t.note && showDetail(t)">{{ t.note }}</td>
+              <td class="ellipsis note cell-text muted" :title="t.note" @click="t.note && showDetail(t)">{{ t.note }}</td>
 
               <td class="action-cell">
                 <div class="menu-wrapper" @click.stop>
@@ -299,8 +299,9 @@ export default {
 
 .wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden }
 .wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:780px }
-.wbs-table th { background:var(--bg3); padding:9px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden }
-.wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
+.wbs-table th { background:var(--bg3); padding:9px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap }
+.wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px }
+.wbs-table td.ellipsis { overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
 .wbs-table tr:last-child td { border-bottom:none }
 
 /* 공통 셀 폰트 — 담당자 기준으로 통일 */
@@ -343,9 +344,9 @@ export default {
 .sb-overdue { background:var(--red-dim);   color:var(--red) }
 .sb-pending { background:var(--bg4);       color:var(--muted) }
 
-.note { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer }
+.note { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; max-width:0; width:100% }
 .note:hover { color:var(--text) }
-.nowrap { white-space:nowrap; overflow:hidden; text-overflow:clip }
+.nowrap { white-space:nowrap }
 
 /* 태스크 상세 팝업 */
 .detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:500; display:flex; align-items:center; justify-content:center }

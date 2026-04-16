@@ -240,8 +240,9 @@ export default {
 .mc-val  { font-size:24px; font-family:'DM Mono',monospace; font-weight:600 }
 .mc-sub  { font-size:11px; color:var(--muted); margin-top:3px }
 .mc-arrow{ font-size:11px }
-.mc-clickable { cursor:pointer; transition:background .15s; user-select:none }
-.mc-clickable:hover { background:var(--bg3) }
+.mc-clickable { cursor:pointer; transition:all .15s; user-select:none }
+.mc-clickable:hover { filter:brightness(.95) }
+.mc-clickable:active { transform:scale(.98) }
 
 .tabs  { display:flex; gap:2px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:3px; width:fit-content; margin-bottom:14px }
 .tab   { padding:5px 14px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--muted); transition:all .15s; display:flex; align-items:center; gap:6px }

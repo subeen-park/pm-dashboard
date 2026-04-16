@@ -72,20 +72,18 @@
         :loading="tasksLoading"
         @edit="openEdit" @delete="deleteTask" />
 
-      <!-- 스티키 지연 네비게이터 -->
-      <div v-if="activeTab==='tasks' && cnt('overdue') > 0"
-        class="overdue-nav" :class="{ collapsed: navCollapsed }">
-        <div class="overdue-nav-inner">
-          <span class="overdue-nav-icon">⚠️</span>
-          <span class="overdue-nav-text" v-if="!navCollapsed">
-            지연 <b>{{ cnt('overdue') }}건</b> — 클릭해서 순서대로 확인
+      <!-- 스티키 네비게이터 (진행중/리스크/지연) -->
+      <div v-if="activeTab==='tasks' && navStatus && !navClosed"
+        class="status-nav" :class="'nav-'+navStatus">
+        <div class="status-nav-inner">
+          <span class="status-nav-icon">{{ navIcon }}</span>
+          <span class="status-nav-text">
+            {{ navLabel }} <b>{{ navCount }}건</b> — 클릭해서 순서대로 확인
           </span>
-          <button v-if="!navCollapsed" class="overdue-nav-btn" @click="focusOverdue">
-            다음 지연 ↓
+          <button class="status-nav-btn" @click="focusStatus(navStatus)">
+            다음 ↓
           </button>
-          <button class="overdue-nav-collapse" @click="navCollapsed=!navCollapsed" :title="navCollapsed?'펼치기':'접기'">
-            {{ navCollapsed ? '▶' : '✕' }}
-          </button>
+          <button class="status-nav-close" @click="navClosed=true">✕</button>
         </div>
       </div>
       <gantt-chart v-if="activeTab==='gantt'" :tasks="tasks" />
@@ -181,6 +179,8 @@ export default {
       showSheetsModal: false, sheetsUrl: '',
       focusOverdueAt: 0, tasksLoading: true,
       navCollapsed: false,
+      navStatus: '',   // 현재 네비게이터 상태 ('progress'|'risk'|'overdue')
+      navClosed: true, // 닫혀있는지
       focusStatusAt: { status: '', ts: 0 },
       // 업로드 확인
       showUploadConfirm: false,
@@ -196,6 +196,20 @@ export default {
   },
   beforeUnmount() { document.removeEventListener('click', this.closeUploadMenu) },
   watch: { project() { this.loadTasks() } },
+  computed: {
+    navIcon()  {
+      return { progress:'🟢', risk:'⚠️', overdue:'🚨' }[this.navStatus] || ''
+    },
+    navLabel() {
+      return { progress:'진행중', risk:'리스크', overdue:'지연' }[this.navStatus] || ''
+    },
+    navCount() {
+      if (this.navStatus === 'overdue')  return this.cnt('overdue')
+      if (this.navStatus === 'risk')     return this.cnt('risk')
+      if (this.navStatus === 'progress') return this.cnt('progress') + this.cnt('done')
+      return 0
+    },
+  },
   methods: {
     async loadTasks() {
       this.tasksLoading = true
@@ -212,6 +226,8 @@ export default {
                        this.cnt('progress') + this.cnt('done')
       if (!hasItems) return
       if (this.activeTab !== 'tasks') this.activeTab = 'tasks'
+      this.navStatus = status
+      this.navClosed = false
       this.$nextTick(() => {
         this.focusStatusAt = { status, ts: Date.now() }
         if (status === 'overdue') this.focusOverdueAt++
@@ -390,8 +406,9 @@ export default {
 .mc-val   { font-size:26px; font-family:'DM Mono',monospace; font-weight:600 }
 .mc-sub   { font-size:11px; color:var(--muted); margin-top:4px }
 .mc-arrow { font-size:11px }
-.mc-clickable { cursor:pointer; transition:background .15s; user-select:none }
-.mc-clickable:hover { background:var(--bg3) }
+.mc-clickable { cursor:pointer; transition:all .15s; user-select:none }
+.mc-clickable:hover { filter:brightness(.95) }
+.mc-clickable:active { transform:scale(.98) }
 
 .tabs { display:flex; gap:4px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:5px; width:fit-content; margin-bottom:16px }
 .tab  { padding:8px 20px; border-radius:8px; cursor:pointer; font-size:14px; color:var(--muted); transition:all .15s; font-weight:500 }
@@ -430,28 +447,17 @@ export default {
 .snapshot-time { font-size:11px; color:var(--muted); margin-top:2px }
 .empty-state { text-align:center; padding:24px; color:var(--muted); font-size:13px }
 
-/* 스티키 지연 네비게이터 */
-.overdue-nav {
-  position:sticky; bottom:16px; z-index:100;
-  display:flex; justify-content:center;
-  pointer-events:none; margin-top:12px;
-}
-.overdue-nav-inner {
-  display:flex; align-items:center; gap:10px;
-  background:var(--red); color:#fff;
-  padding:10px 16px; border-radius:28px;
-  font-size:13px; font-weight:500;
-  box-shadow:0 4px 16px rgba(239,68,68,.35);
-  pointer-events:all; transition:all .2s;
-}
-.overdue-nav.collapsed .overdue-nav-inner {
-  padding:10px 12px;
-}
-.overdue-nav-icon  { font-size:15px }
-.overdue-nav-text  { white-space:nowrap }
-.overdue-nav-text b{ font-weight:700 }
-.overdue-nav-btn   { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4); color:#fff; padding:5px 12px; border-radius:16px; cursor:pointer; font-size:12px; font-weight:600; font-family:inherit; white-space:nowrap; transition:background .15s }
-.overdue-nav-btn:hover { background:rgba(255,255,255,.35) }
-.overdue-nav-collapse { background:none; border:none; color:rgba(255,255,255,.8); cursor:pointer; font-size:13px; padding:2px 4px; line-height:1 }
-.overdue-nav-collapse:hover { color:#fff }
+/* 스티키 상태 네비게이터 */
+.status-nav { position:sticky; bottom:16px; z-index:100; display:flex; justify-content:center; margin-top:12px; pointer-events:none }
+.status-nav-inner { display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:28px; font-size:13px; font-weight:500; box-shadow:0 4px 16px rgba(0,0,0,.2); pointer-events:all; transition:all .2s }
+.nav-progress .status-nav-inner { background:var(--green); color:#fff }
+.nav-risk     .status-nav-inner { background:var(--yellow); color:#0a0800 }
+.nav-overdue  .status-nav-inner { background:var(--red); color:#fff }
+.status-nav-icon  { font-size:15px }
+.status-nav-text  { white-space:nowrap }
+.status-nav-text b{ font-weight:700 }
+.status-nav-btn   { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4); color:inherit; padding:5px 12px; border-radius:16px; cursor:pointer; font-size:12px; font-weight:600; font-family:inherit; white-space:nowrap; transition:background .15s }
+.status-nav-btn:hover { background:rgba(255,255,255,.35) }
+.status-nav-close { background:none; border:none; color:inherit; opacity:.8; cursor:pointer; font-size:14px; padding:2px 4px; line-height:1 }
+.status-nav-close:hover { opacity:1 }
 </style>
