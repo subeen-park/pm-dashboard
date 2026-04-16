@@ -15,15 +15,15 @@
       <div style="overflow-x:auto">
       <table class="wbs-table">
         <colgroup>
-          <col style="width:44px">
-          <col style="min-width:200px">
-          <col style="width:76px">
-          <col style="width:96px">
-          <col style="width:96px">
-          <col style="width:88px">
+          <col style="width:36px">
+          <col style="min-width:180px">
+          <col style="width:90px">
+          <col style="width:100px">
+          <col style="width:100px">
+          <col style="width:80px">
           <col style="width:110px">
-          <col style="width:68px">
-          <col style="min-width:110px">
+          <col style="width:64px">
+          <col style="min-width:100px">
           <col style="width:36px">
         </colgroup>
         <thead>
@@ -179,6 +179,7 @@ export default {
       overdueRefs: {},
       overdueIndex: 0,
       detailTask: null,
+      statusIdx: {},
     }
   },
   computed: {
@@ -209,8 +210,7 @@ export default {
     },
   },
   watch: {
-    focusOverdueAt(val) { if (val > 0) this.focusNextOverdue() },
-    focusStatusAt(val)  { if (val.ts > 0) this.focusNextByStatus(val.status) },
+    focusStatusAt(val)  { if (val && val.ts > 0) this.focusNextByStatus(val.status) },
     tasks()             { this.overdueRefs = {}; this.overdueIndex = 0 },
   },
   mounted()      { document.addEventListener('click', this.closeMenu) },
@@ -264,8 +264,7 @@ export default {
     },
     focusNextOverdue() { this.focusNextByStatus('overdue') },
     focusNextByStatus(status) {
-      if (!this._statusIdx) this._statusIdx = {}
-      if (!this._statusIdx[status]) this._statusIdx[status] = 0
+      if (!this.statusIdx[status]) this.statusIdx[status] = 0
       const ids = []
       Object.values(this.grouped).forEach(list => {
         list.filter(t => {
@@ -277,8 +276,8 @@ export default {
         }).forEach(t => ids.push(t.id))
       })
       if (!ids.length) return
-      const id = ids[this._statusIdx[status] % ids.length]
-      this._statusIdx[status]++
+      const id = ids[this.statusIdx[status] % ids.length]
+      this.statusIdx[status]++
       this.focusedId = id
       this.$nextTick(() => {
         const el = this.$el.querySelector(`[data-task-id="${id}"]`)
@@ -298,7 +297,7 @@ export default {
 .sort-btn.on{ background:var(--bg4); color:var(--text); border-color:var(--border) }
 
 .wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden }
-.wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:780px }
+.wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:880px }
 .wbs-table th { background:var(--bg3); padding:9px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap }
 .wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px }
 .wbs-table td.ellipsis { overflow:hidden; white-space:nowrap; text-overflow:ellipsis }

@@ -107,6 +107,15 @@ export default {
     this.setTheme(savedTheme)
     await this.loadWithWakeup()
     await this.loadLogs()
+    window.addEventListener('hashchange', this.onHashChange)
+    // 초기 해시 설정
+    if (!location.hash || location.hash === '#') {
+      location.hash = 'home'
+    }
+    this.applyHash()
+  },
+  beforeUnmount() {
+    window.removeEventListener('hashchange', this.onHashChange)
   },
   methods: {
     async loadWithWakeup() {
@@ -135,10 +144,40 @@ export default {
       }
     },
     async loadLogs() { try { this.logs = await api.getLogs() } catch(e) {} },
-    selectProject(proj) { this.selectedProject = proj; this.view = 'detail' },
-    goHome() { this.view = 'home'; this.selectedProject = null },
-    goList() { this.view = 'list'; this.selectedProject = null },
-    goPage(page) { this.view = page; this.selectedProject = null },
+    selectProject(proj) {
+      this.selectedProject = proj; this.view = 'detail'
+      location.hash = 'detail'
+    },
+    goHome() { this.view = 'home'; this.selectedProject = null; location.hash = 'home' },
+    goList() { this.view = 'list'; this.selectedProject = null; location.hash = 'list' },
+    goPage(page) { this.view = page; this.selectedProject = null; location.hash = page },
+    onHashChange() {
+      const hash = location.hash.replace('#', '') || 'home'
+      const valid = ['home', 'list', 'detail', 'merge', 'jira']
+      if (valid.includes(hash)) {
+        // detail 이고 selectedProject 없으면 list로
+        if (hash === 'detail' && !this.selectedProject) {
+          this.view = 'list'
+          location.hash = 'list'
+        } else {
+          this.view = hash
+          if (hash !== 'detail') this.selectedProject = null
+        }
+      } else {
+        this.view = 'home'
+        location.hash = 'home'
+      }
+    },
+    applyHash() {
+      const hash = location.hash.replace('#', '') || 'home'
+      const valid = ['home', 'list', 'detail', 'merge', 'jira']
+      if (valid.includes(hash) && hash !== 'detail') {
+        this.view = hash
+      } else {
+        this.view = 'home'
+        location.hash = 'home'
+      }
+    },
     editProj(proj) { this.editingProject = {...proj}; this.showProjectForm = true },
     async saveProject(form) {
       if (form.id) {

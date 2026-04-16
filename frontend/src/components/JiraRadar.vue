@@ -4,8 +4,9 @@
     <div class="filter-bar">
       <div class="filter-group">
         <span class="filter-label">위험 기준</span>
-        <input type="range" min="1" max="14" v-model.number="riskThreshold" class="slider" />
-        <span class="threshold-val">{{ riskThreshold }}일 이상</span>
+        <select v-model.number="riskThreshold" class="filter-select">
+          <option v-for="d in [1,2,3,5,7,10,14]" :key="d" :value="d">{{ d }}일 이상</option>
+        </select>
       </div>
       <div class="filter-group">
         <span class="filter-label">담당자</span>
@@ -28,20 +29,20 @@
         <div class="mc-label">총 관리 대상</div>
         <div class="mc-val" style="color:var(--blue)">{{ displayData.length }}</div>
       </div>
-      <div class="mc mc-clickable" @click="activeTab='aging'; activeType='전체'" title="정체 리스크 탭으로 이동">
+      <div class="mc mc-clickable" @click="scrollTo('aging-section')" title="정체 탭으로 이동">
         <div class="mc-label">⚠️ 정체 리스크 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--yellow)">{{ highRiskData.length }}</div>
         <div class="mc-sub">{{ riskThreshold }}일 이상 정체</div>
       </div>
-      <div class="mc mc-clickable" @click="activeTab='aging'; activeType='전체'" title="정체 탭으로 이동">
+      <div class="mc mc-clickable" @click="scrollTo('aging-section')" title="정체 탭으로 이동">
         <div class="mc-label">최대 정체 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--red)"><span class="mc-num">{{ maxAging }}</span><span class="mc-unit">일</span></div>
       </div>
-      <div class="mc mc-clickable" @click="activeTab='due'" title="일정 리스크 탭으로 이동">
+      <div class="mc mc-clickable" @click="scrollTo('due-section')" title="일정 리스크 탭으로 이동">
         <div class="mc-label">기한 누락 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--muted)">{{ missingDueData.length }}</div>
       </div>
-      <div class="mc mc-clickable" @click="activeTab='due'" title="일정 리스크 탭으로 이동">
+      <div class="mc mc-clickable" @click="scrollTo('due-section')" title="일정 리스크 탭으로 이동">
         <div class="mc-label">기한 지연 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--red)">{{ overdueData.length }}</div>
       </div>
@@ -96,7 +97,7 @@
     </div>
 
     <!-- 정체 탭 -->
-    <div v-if="activeTab==='aging'">
+    <div v-if="activeTab==='aging'" id="aging-section">
       <!-- 업무유형 필터 -->
       <div class="type-tabs">
         <button v-for="t in issueTypes" :key="t"
@@ -140,8 +141,8 @@
     </div>
 
     <!-- 일정 리스크 탭 -->
-    <div v-if="activeTab==='due'">
-      <div class="sub-section">
+    <div v-if="activeTab==='due'" id="due-section">
+      <div class="sub-section" id="missing-section">
         <div class="sub-title">기한 누락 작업 ({{ missingDueData.length }}건)</div>
         <div class="table-wrap">
           <table class="data-table">
@@ -159,7 +160,7 @@
         </div>
       </div>
 
-      <div class="sub-section">
+      <div class="sub-section" id="overdue-section">
         <div class="sub-title">기한 지연 작업 ({{ overdueData.length }}건)</div>
         <div class="table-wrap">
           <table class="data-table">
@@ -239,6 +240,16 @@ export default {
     chartMax() { return Math.max(...this.chartData.map(c=>c.count), 1) },
   },
   methods: {
+    scrollTo(id) {
+      const tabKey = (id === 'missing-section' || id === 'overdue-section' || id === 'due-section') ? 'due' : 'aging'
+      this.activeTab = tabKey
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const el = document.getElementById(id)
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 50)
+      })
+    },
     toggleDetail(name) { this.detailAssignee = this.detailAssignee===name ? null : name },
     typeCount(t) { return t==='전체' ? this.highRiskData.length : this.highRiskData.filter(r=>r.업무유형===t).length },
     stateClass(s) {

@@ -230,7 +230,6 @@ export default {
       this.navClosed = false
       this.$nextTick(() => {
         this.focusStatusAt = { status, ts: Date.now() }
-        if (status === 'overdue') this.focusOverdueAt++
       })
     },
     focusOverdue() { this.focusStatus('overdue') },
