@@ -269,19 +269,19 @@ export default {
 .wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden }
 .wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:780px }
 .wbs-table th { background:var(--bg3); padding:9px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden }
-.wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px; overflow:hidden }
+.wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
 .wbs-table tr:last-child td { border-bottom:none }
 
 /* 공통 셀 폰트 — 담당자 기준으로 통일 */
 .cell-text { font-size:13px; font-weight:400; font-family:'Noto Sans KR',sans-serif }
 .cell-date { font-size:13px; font-weight:400; font-family:'DM Mono',monospace; white-space:nowrap }
 
-.task-name-cell { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; min-width:0 }
-.task-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; min-width:0 }
+.task-name-cell { display:flex; align-items:center; gap:6px; overflow:hidden }
+.task-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0 }
 .overdue-chip {
   flex-shrink:0;
   display:inline-flex; align-items:center;
-  padding:2px 7px; border-radius:4px;
+  padding:1px 6px; border-radius:4px;
   font-size:11px; font-weight:600;
   background:var(--red-dim); color:var(--red);
   white-space:nowrap;
@@ -326,7 +326,8 @@ export default {
 .gb-qa      { background:#fce7f3; color:#be185d }
 
 /* 지연 포커싱 */
-.row-focused td { background:rgba(239,68,68,.07) !important }
+.row-focused td { background:rgba(239,68,68,.1) !important; transition:background .3s }
+.task-row td { transition:background .3s }
 
 /* 3dot */
 .action-cell  { text-align:center; position:relative }
