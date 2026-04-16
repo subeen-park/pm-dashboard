@@ -238,7 +238,7 @@ export default {
 
 :root{
   --bg:#07070e;--bg2:#0e0e18;--bg3:#141420;--bg4:#1a1a28;
-  --amber:#e8b84b;--amber-dim:rgba(232,184,75,.12);
+  --amber:#c8d878;--amber-dim:rgba(200,216,120,.1);
   --blue:#4a9eff;--blue-dim:rgba(74,158,255,.1);
   --green:#3db87a;--green-dim:rgba(61,184,122,.1);
   --red:#e05555;--red-dim:rgba(224,85,85,.1);
@@ -248,13 +248,13 @@ export default {
 }
 :root[data-theme="light"]{
   --bg:#f5f5f0;--bg2:#ffffff;--bg3:#f8f8f4;--bg4:#efefea;
-  --amber:#c07a10;--amber-dim:rgba(192,122,16,.08);
+  --amber:#1a1a1a;--amber-dim:rgba(0,0,0,.06);
   --blue:#2b7fd4;--blue-dim:rgba(43,127,212,.08);
   --green:#1a9660;--green-dim:rgba(26,150,96,.08);
   --red:#cc3333;--red-dim:rgba(204,51,51,.08);
   --yellow:#b08820;--yellow-dim:rgba(176,136,32,.08);
   --text:#1a1a24;--muted:#888898;--faint:#d8d8d0;
-  --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.12);
+  --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.14);
 }
 
 html{scroll-behavior:smooth}
@@ -279,6 +279,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 /* 버튼 */
 .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;border:none;transition:all .15s;font-weight:500;letter-spacing:.01em}
 .btn-primary{background:var(--amber);color:#fff}.btn-primary:hover{opacity:.85}
+:root[data-theme="light"] .btn-primary{color:#fff}
 .btn-sm{padding:6px 14px;font-size:12px}
 
 /* 서버 깨우기 오버레이 */
@@ -295,20 +296,20 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 @keyframes dot-bounce{from{opacity:.3;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 
 /* 홈 - 노스크롤 레이아웃 */
-.home-page{height:calc(100vh - 56px);display:flex;flex-direction:column;justify-content:center;padding:0 56px 32px;max-width:1300px;margin:0 auto;box-sizing:border-box;gap:40px}
-.home-hero{max-width:780px}
-.home-eyebrow{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
-.home-title{font-size:60px;font-weight:700;line-height:1.1;margin-bottom:20px;color:var(--text);letter-spacing:-.025em}
-.home-desc{font-size:16px;color:var(--muted);line-height:1.75;margin-bottom:32px;font-weight:300}
-.home-cta{font-size:13px;padding:11px 24px;border-radius:6px}
+.home-page{height:calc(100vh - 56px);display:flex;flex-direction:column;padding:64px 56px 48px;max-width:1300px;margin:0 auto;box-sizing:border-box;overflow:hidden}
+.home-hero{max-width:720px;flex-shrink:0}
+.home-eyebrow{font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+.home-title{font-size:56px;font-weight:700;line-height:1.1;margin-bottom:16px;color:var(--text);letter-spacing:-.025em}
+.home-desc{font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:28px;font-weight:300}
+.home-cta{font-size:13px;padding:10px 22px;border-radius:6px}
 .home-divider{display:none}
-.home-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-shrink:0}
-.home-card{background:var(--bg2);padding:24px 22px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:12px;position:relative}
+.home-cards{margin-top:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-shrink:0}
+.home-card{background:var(--bg2);padding:22px 20px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:10px;position:relative}
 .home-card:hover{background:var(--bg3)}
-.home-card-num{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em}
-.home-card-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
-.home-card-desc{font-size:13px;color:var(--muted);line-height:1.65;flex:1}
-.home-card-action{font-size:11px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
+.home-card-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em}
+.home-card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3}
+.home-card-desc{font-size:12px;color:var(--muted);line-height:1.6;flex:1}
+.home-card-action{font-size:11px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:4px}
 
 /* 토스트 */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column;gap:8px}
