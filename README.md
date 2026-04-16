@@ -2,7 +2,7 @@
 
 **PM 업무를 한 곳에서 끝내는 릴리즈 관리 도구**
 
-🔗 **[https://wbs-release-manager.vercel.app](https://wbs-release-manager.vercel.app)**
+🔗 **[https://wbs-release-manager.vercel.app](https://wbs-release-manager.vercel.app)** << 클릭해주세요!
 
 ---
 
