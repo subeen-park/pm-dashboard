@@ -243,8 +243,8 @@ export default {
   --green:#3db87a;--green-dim:rgba(61,184,122,.1);
   --red:#e05555;--red-dim:rgba(224,85,85,.1);
   --yellow:#d4a843;--yellow-dim:rgba(212,168,67,.1);
-  --text:#dddde8;--muted:#55556a;--faint:#25253a;
-  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --text:#eeeeee;--muted:#9090a8;--faint:#2a2a40;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
 }
 :root[data-theme="light"]{
   --bg:#f5f5f0;--bg2:#ffffff;--bg3:#f8f8f4;--bg4:#efefea;
@@ -258,7 +258,7 @@ export default {
 }
 
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;min-height:100vh;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:15px;min-height:100vh;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased}
 .app{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
 
 /* GNB */

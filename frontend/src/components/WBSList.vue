@@ -249,15 +249,15 @@ export default {
 .search-input::placeholder{ color:var(--muted) }
 .clear-btn   { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px }
 .header-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
-.count-label { font-size:12px; color:var(--muted); font-family:'DM Mono',monospace }
-.sel-count   { font-size:12px; font-weight:600; color:var(--amber); font-family:'DM Mono',monospace }
-.filter-select{ background:transparent; border:1px solid var(--border2); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; outline:none; cursor:pointer; font-family:inherit }
+.count-label { font-size:13px; color:var(--muted); font-family:'DM Mono',monospace }
+.sel-count   { font-size:13px; font-weight:600; color:var(--amber); font-family:'DM Mono',monospace }
+.filter-select{ background:transparent; border:1px solid var(--border2); border-radius:6px; padding:6px 10px; color:var(--text); font-size:13px; outline:none; cursor:pointer; font-family:inherit }
 
 .col-check { width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center }
 .col-check input { cursor:pointer; width:14px; height:14px; accent-color:var(--amber) }
 
 .col-header { display:flex; align-items:center; padding:10px 20px; border-bottom:1px solid var(--border) }
-.col-header span { font-size:10px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.08em }
+.col-header span { font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.08em }
 
 .proj-row { display:flex; align-items:center; padding:14px 20px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s }
 .proj-row:hover { background:var(--bg3) }
@@ -265,10 +265,10 @@ export default {
 .proj-row:last-child { border-bottom:none }
 
 .proj-name-cell { overflow:hidden }
-.proj-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-.proj-desc  { font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-.proj-pm, .proj-date, .proj-count { font-size:12px; color:var(--muted) }
-.status-badge { padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase }
+.proj-name  { font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.proj-desc  { font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.proj-pm, .proj-date, .proj-count { font-size:13px; color:var(--muted) }
+.status-badge { padding:3px 8px; border-radius:3px; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase }
 .sb-done    { background:var(--green-dim); color:var(--green) }
 .sb-progress{ background:var(--blue-dim);  color:var(--blue) }
 .sb-risk    { background:var(--yellow-dim);color:var(--yellow) }
