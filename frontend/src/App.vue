@@ -18,6 +18,8 @@
         <div class="gnb-item" :class="{active: view==='home'}" @click="goHome">홈</div>
         <div class="gnb-item" :class="{active: view==='list' || view==='detail'}" @click="goList">WBS 보드</div>
         <div class="gnb-item gnb-sub" v-if="view==='detail' && selectedProject">› {{ selectedProject.name }}</div>
+        <div class="gnb-item" :class="{active: view==='calendar'}" @click="goPage('calendar')">릴리즈 캘린더</div>
+        <div class="gnb-item" :class="{active: view==='checklist'}" @click="goPage('checklist')">체크리스트</div>
         <div class="gnb-item" :class="{active: view==='merge'}" @click="goPage('merge')">머지 트래커</div>
         <div class="gnb-item" :class="{active: view==='jira'}" @click="goPage('jira')">Jira 레이더</div>
       </nav>
@@ -50,6 +52,18 @@
           <div class="home-card-desc">WBS 프로젝트와 태스크를 관리하고, 간트 차트로 일정을 시각화해요. 지연/리스크 현황을 한눈에 파악하세요.</div>
           <div class="home-card-action">시작하기 →</div>
         </div>
+        <div class="home-card" @click="goPage('calendar')">
+          <div class="home-card-icon">📅</div>
+          <div class="home-card-title">릴리즈 캘린더</div>
+          <div class="home-card-desc">전체 프로젝트의 마감일과 마일스톤을 월별 캘린더로 확인하세요. 릴리즈 일정 충돌을 사전에 파악할 수 있어요.</div>
+          <div class="home-card-action">확인하기 →</div>
+        </div>
+        <div class="home-card" @click="goPage('checklist')">
+          <div class="home-card-icon">✅</div>
+          <div class="home-card-title">릴리즈 체크리스트</div>
+          <div class="home-card-desc">릴리즈 전 QA, 배포, 롤백 플랜 등 필수 확인 항목을 팁별로 관리하세요. 팀원이 직접 체크하는 협업 철스팅 도구입니다.</div>
+          <div class="home-card-action">확인하기 →</div>
+        </div>
         <div class="home-card" @click="goPage('merge')">
           <div class="home-card-icon">🔀</div>
           <div class="home-card-title">머지 트래커</div>
@@ -69,8 +83,10 @@
       @select="selectProject" @new="showProjectForm=true" @edit="editProj" @delete="deleteProject" />
     <w-b-s-detail v-if="view==='detail' && selectedProject" :project="selectedProject" :logs="logs"
       @back="goList" @edit-project="editProj" @toast="showToast" @reload-logs="loadLogs" @refresh-projects="loadProjects" />
-    <merge-tracker v-if="view==='merge'" />
-    <jira-radar    v-if="view==='jira'" />
+    <merge-tracker    v-if="view==='merge'" />
+    <jira-radar       v-if="view==='jira'" />
+    <release-calendar v-if="view==='calendar'" />
+    <release-checklist v-if="view==='checklist'" />
 
     <project-form v-model="showProjectForm" :edit-project="editingProject" @save="saveProject" @delete="deleteProject" />
 
@@ -82,15 +98,17 @@
 
 <script>
 import { api } from './api/index.js'
-import WBSList      from './components/WBSList.vue'
-import WBSDetail    from './components/WBSDetail.vue'
-import ProjectForm  from './components/ProjectForm.vue'
-import MergeTracker from './components/MergeTracker.vue'
-import JiraRadar    from './components/JiraRadar.vue'
+import WBSList           from './components/WBSList.vue'
+import WBSDetail         from './components/WBSDetail.vue'
+import ProjectForm       from './components/ProjectForm.vue'
+import MergeTracker      from './components/MergeTracker.vue'
+import JiraRadar         from './components/JiraRadar.vue'
+import ReleaseCalendar   from './components/ReleaseCalendar.vue'
+import ReleaseChecklist  from './components/ReleaseChecklist.vue'
 
 export default {
   name: 'App',
-  components: { WBSList, WBSDetail, ProjectForm, MergeTracker, JiraRadar },
+  components: { WBSList, WBSDetail, ProjectForm, MergeTracker, JiraRadar, ReleaseCalendar, ReleaseChecklist },
   data() {
     return {
       view: 'home',
@@ -153,7 +171,7 @@ export default {
     goPage(page) { this.view = page; this.selectedProject = null; location.hash = page },
     onHashChange() {
       const hash = location.hash.replace('#', '') || 'home'
-      const valid = ['home', 'list', 'detail', 'merge', 'jira']
+      const valid = ['home', 'list', 'detail', 'merge', 'jira', 'calendar', 'checklist']
       if (valid.includes(hash)) {
         // detail 이고 selectedProject 없으면 list로
         if (hash === 'detail' && !this.selectedProject) {
@@ -170,7 +188,7 @@ export default {
     },
     applyHash() {
       const hash = location.hash.replace('#', '') || 'home'
-      const valid = ['home', 'list', 'detail', 'merge', 'jira']
+      const valid = ['home', 'list', 'detail', 'merge', 'jira', 'calendar', 'checklist']
       if (valid.includes(hash) && hash !== 'detail') {
         this.view = hash
       } else {
@@ -285,7 +303,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .home-title{font-size:42px;font-weight:700;line-height:1.3;margin-bottom:20px;color:var(--text)}
 .home-desc{font-size:16px;color:var(--muted);line-height:1.8;margin-bottom:36px}
 .home-cta{font-size:15px;padding:14px 32px;border-radius:10px}
-.home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.home-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
 .home-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:12px}
 .home-card:hover{border-color:var(--amber);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 .home-card-icon{font-size:32px}

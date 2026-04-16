@@ -250,7 +250,7 @@ export default {
 .header-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
 .count-label { font-size:13px; color:var(--muted) }
 .sel-count   { font-size:13px; font-weight:600; color:var(--amber) }
-.filter-select{ background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:7px 10px; color:var(--text); font-size:13px; outline:none; cursor:pointer }
+.filter-select{ background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:7px 10px; color:var(--text); font-size:13px; outline:none; cursor:pointer; font-family:inherit }
 
 /* 체크박스 열 */
 .col-check { width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center }
