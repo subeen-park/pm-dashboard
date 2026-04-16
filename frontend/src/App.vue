@@ -238,7 +238,7 @@ export default {
 
 :root{
   --bg:#07070e;--bg2:#0e0e18;--bg3:#141420;--bg4:#1a1a28;
-  --amber:#c9943a;--amber-dim:rgba(201,148,58,.12);
+  --amber:#e8b84b;--amber-dim:rgba(232,184,75,.12);
   --blue:#4a9eff;--blue-dim:rgba(74,158,255,.1);
   --green:#3db87a;--green-dim:rgba(61,184,122,.1);
   --red:#e05555;--red-dim:rgba(224,85,85,.1);
@@ -248,7 +248,7 @@ export default {
 }
 :root[data-theme="light"]{
   --bg:#f5f5f0;--bg2:#ffffff;--bg3:#f8f8f4;--bg4:#efefea;
-  --amber:#b07d28;--amber-dim:rgba(176,125,40,.08);
+  --amber:#c07a10;--amber-dim:rgba(192,122,16,.08);
   --blue:#2b7fd4;--blue-dim:rgba(43,127,212,.08);
   --green:#1a9660;--green-dim:rgba(26,150,96,.08);
   --red:#cc3333;--red-dim:rgba(204,51,51,.08);
@@ -294,21 +294,21 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes dot-bounce{from{opacity:.3;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 
-/* 홈 */
-.home-page{padding:0 56px 100px;max-width:1300px;margin:0 auto}
-.home-hero{padding:120px 0 96px;max-width:780px}
-.home-eyebrow{font-size:13px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:32px}
-.home-title{font-size:74px;font-weight:700;line-height:1.08;margin-bottom:28px;color:var(--text);letter-spacing:-.025em}
-.home-desc{font-size:17px;color:var(--muted);line-height:1.8;margin-bottom:44px;font-weight:300}
-.home-cta{font-size:14px;padding:13px 28px;border-radius:6px}
-.home-divider{height:1px;background:var(--border);margin-bottom:56px}
-.home-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.home-card{background:var(--bg2);padding:36px 32px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:18px;min-height:230px;position:relative}
+/* 홈 - 노스크롤 레이아웃 */
+.home-page{height:calc(100vh - 56px);display:flex;flex-direction:column;justify-content:center;padding:0 56px 32px;max-width:1300px;margin:0 auto;box-sizing:border-box;gap:40px}
+.home-hero{max-width:780px}
+.home-eyebrow{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
+.home-title{font-size:60px;font-weight:700;line-height:1.1;margin-bottom:20px;color:var(--text);letter-spacing:-.025em}
+.home-desc{font-size:16px;color:var(--muted);line-height:1.75;margin-bottom:32px;font-weight:300}
+.home-cta{font-size:13px;padding:11px 24px;border-radius:6px}
+.home-divider{display:none}
+.home-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-shrink:0}
+.home-card{background:var(--bg2);padding:24px 22px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:12px;position:relative}
 .home-card:hover{background:var(--bg3)}
 .home-card-num{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em}
-.home-card-title{font-size:17px;font-weight:600;color:var(--text);line-height:1.3}
-.home-card-desc{font-size:14px;color:var(--muted);line-height:1.75;flex:1}
-.home-card-action{font-size:12px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
+.home-card-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+.home-card-desc{font-size:13px;color:var(--muted);line-height:1.65;flex:1}
+.home-card-action{font-size:11px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
 
 /* 토스트 */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column;gap:8px}

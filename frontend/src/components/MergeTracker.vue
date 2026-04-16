@@ -265,14 +265,14 @@ export default {
 .empty-state { text-align:center; padding:40px; color:var(--muted); font-size:13px }
 
 .status-chip { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; white-space:nowrap }
-.sc-done  { background:#1a4a32; color:var(--green) }
+.sc-done  { background:var(--green-dim); color:var(--green) }
 .sc-ready { background:var(--yellow-dim); color:var(--yellow) }
 .sc-build { background:var(--blue-dim); color:var(--blue) }
 .sc-none  { background:var(--bg4); color:var(--muted) }
 .sc-err   { background:var(--red-dim); color:var(--red) }
 
 .build-chip { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600 }
-.bc-ok   { background:#1a4a32; color:var(--green) }
+.bc-ok   { background:var(--green-dim); color:var(--green) }
 .bc-fail { background:var(--red-dim); color:var(--red) }
 .bc-none { background:var(--bg4); color:var(--muted) }
 
