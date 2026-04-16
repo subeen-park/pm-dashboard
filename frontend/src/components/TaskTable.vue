@@ -14,18 +14,30 @@
     <div class="wbs-wrap">
       <div style="overflow-x:auto">
       <table class="wbs-table">
+        <colgroup>
+          <col style="width:44px">
+          <col style="min-width:200px">
+          <col style="width:76px">
+          <col style="width:96px">
+          <col style="width:96px">
+          <col style="width:88px">
+          <col style="width:110px">
+          <col style="width:68px">
+          <col style="min-width:110px">
+          <col style="width:36px">
+        </colgroup>
         <thead>
           <tr>
-            <th style="width:52px">그룹</th>
-            <th style="min-width:200px">태스크</th>
-            <th style="width:80px">담당자</th>
-            <th style="width:92px;white-space:nowrap">시작일</th>
-            <th style="width:92px;white-space:nowrap">마감일</th>
-            <th style="width:90px">Jira</th>
-            <th style="width:120px">진행률</th>
-            <th style="width:72px">상태</th>
-            <th style="min-width:120px">메모</th>
-            <th style="width:40px"></th>
+            <th>그룹</th>
+            <th>태스크</th>
+            <th>담당자</th>
+            <th>시작일</th>
+            <th>마감일</th>
+            <th>Jira</th>
+            <th>진행률</th>
+            <th>상태</th>
+            <th>메모</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -255,9 +267,9 @@ export default {
 .sort-btn.on{ background:var(--bg4); color:var(--text); border-color:var(--border) }
 
 .wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden }
-.wbs-table { width:100%; border-collapse:collapse; table-layout:auto; min-width:600px }
-.wbs-table th { background:var(--bg3); padding:10px 12px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap }
-.wbs-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; word-break:keep-all }
+.wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:780px }
+.wbs-table th { background:var(--bg3); padding:9px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden }
+.wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px; overflow:hidden }
 .wbs-table tr:last-child td { border-bottom:none }
 
 /* 공통 셀 폰트 — 담당자 기준으로 통일 */
