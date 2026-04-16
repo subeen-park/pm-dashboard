@@ -9,14 +9,15 @@
           <button v-if="search" class="clear-btn" @click="search=''">✕</button>
         </div>
         <div class="header-right">
-          <!-- 다중 선택 삭제 -->
-          <template v-if="selected.length > 0">
-            <span class="sel-count">{{ selected.length }}개 선택됨</span>
-            <button class="btn btn-danger-ghost btn-sm" @click="deleteSelected">🗑 선택 삭제</button>
-            <button class="btn btn-ghost btn-sm" @click="selected=[]">취소</button>
+          <template v-if="isSelectMode">
+            <span class="sel-count" v-if="selected.length > 0">{{ selected.length }}개 선택됨</span>
+            <span class="sel-count" v-else>항목을 선택하세요</span>
+            <button class="btn btn-danger-ghost btn-sm" v-if="selected.length > 0" @click="deleteSelected">🗑 선택 삭제</button>
+            <button class="btn btn-ghost btn-sm" @click="cancelSelectMode">취소</button>
           </template>
           <template v-else>
             <span class="count-label">{{ sorted.length }}개 항목</span>
+            <button class="btn btn-ghost btn-sm" @click="isSelectMode=true">✓ 선택하기</button>
             <select v-model="sortKey" class="filter-select">
               <option value="latest">최신 등록순</option>
               <option value="oldest">오래된순</option>
@@ -37,10 +38,10 @@
 
       <!-- 컬럼 헤더 -->
       <div class="col-header">
-        <div class="col-check">
+        <div class="col-check" v-if="isSelectMode">
           <input type="checkbox" :checked="allSelected" @change="toggleAll" />
         </div>
-        <span style="flex:2">프로젝트명</span>
+        <span style="flex:2" :style="{ marginLeft: isSelectMode ? '0' : '10px' }">프로젝트명</span>
         <span style="width:100px;text-align:center">담당 PM</span>
         <span style="width:90px;text-align:center">상태</span>
         <span style="width:140px;text-align:center">진행률</span>
@@ -70,11 +71,11 @@
         :class="{ selected: selected.includes(proj.id) }"
         @click="handleRowClick(proj, $event)">
         <!-- 체크박스 -->
-        <div class="col-check" @click.stop>
+        <div class="col-check" v-if="isSelectMode" @click.stop>
           <input type="checkbox" :value="proj.id" v-model="selected" />
         </div>
         <!-- 프로젝트명 -->
-        <div class="proj-name-cell" style="flex:2">
+        <div class="proj-name-cell" style="flex:2" :style="{ marginLeft: isSelectMode ? '0' : '10px' }">
           <div class="proj-name">{{ proj.name }}</div>
           <div class="proj-desc">{{ proj.description || '설명 없음' }}</div>
         </div>
@@ -144,6 +145,7 @@ export default {
       STATUS_LABEL, STATUS_CLASS,
       activeMenuId: null,
       selected: [],
+      isSelectMode: false,
     }
   },
   computed: {
@@ -187,7 +189,7 @@ export default {
       return 'var(--muted)'
     },
     handleRowClick(proj, e) {
-      if (this.selected.length > 0) {
+      if (this.isSelectMode || this.selected.length > 0) {
         const idx = this.selected.indexOf(proj.id)
         if (idx >= 0) this.selected.splice(idx, 1)
         else this.selected.push(proj.id)
@@ -204,6 +206,10 @@ export default {
       for (const id of [...this.selected]) {
         this.$emit('delete', id)
       }
+      this.cancelSelectMode()
+    },
+    cancelSelectMode() {
+      this.isSelectMode = false
       this.selected = []
     },
     toggleMenu(id, e) {
