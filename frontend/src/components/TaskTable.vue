@@ -16,14 +16,14 @@
       <table class="wbs-table">
         <colgroup>
           <col style="width:36px">
-          <col style="min-width:180px">
+          <col style="width:220px">
           <col style="width:90px">
-          <col style="width:100px">
-          <col style="width:100px">
-          <col style="width:80px">
-          <col style="width:110px">
+          <col style="width:96px">
+          <col style="width:96px">
+          <col style="width:84px">
+          <col style="width:116px">
           <col style="width:64px">
-          <col style="min-width:100px">
+          <col style="width:140px">
           <col style="width:36px">
         </colgroup>
         <thead>
@@ -297,7 +297,7 @@ export default {
 .sort-btn.on{ background:var(--bg4); color:var(--text); border-color:var(--border) }
 
 .wbs-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden }
-.wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:880px }
+.wbs-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:978px }
 .wbs-table th { background:var(--bg3); padding:9px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap }
 .wbs-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; height:44px }
 .wbs-table td.ellipsis { overflow:hidden; white-space:nowrap; text-overflow:ellipsis }

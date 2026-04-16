@@ -36,6 +36,7 @@
         </div>
 
         <button class="btn btn-ghost btn-sm" @click="$emit('edit-project', project)">프로젝트 수정</button>
+        <button class="btn btn-ghost btn-sm" @click="showBulkModal=true" v-if="tasks.length">📊 진행률 일괄 수정</button>
         <button class="btn btn-danger-ghost btn-sm" @click="confirmDeleteAll" v-if="tasks.length">🗑 전체 삭제</button>
         <button class="btn btn-primary btn-sm" @click="openAdd">+ 태스크 추가</button>
       </div>
@@ -93,6 +94,35 @@
 
     <task-form v-model="showForm" :edit-task="editingTask" :project-id="project.id"
       @save="saveTask" @delete="deleteTask" />
+
+    <!-- 진행률 일괄 수정 모달 -->
+    <div v-if="showBulkModal" class="overlay" @click.self="showBulkModal=false">
+      <div class="modal modal-wide">
+        <div class="modal-title">📊 진행률 일괄 수정</div>
+        <p class="modal-desc">태스크별 진행률을 한번에 수정할 수 있어요.</p>
+        <div class="bulk-list">
+          <div v-for="t in bulkTasks" :key="t.id" class="bulk-row">
+            <div class="bulk-info">
+              <span class="bulk-group" :style="groupBadgeStyle(t.group)">{{ t.group }}</span>
+              <span class="bulk-name">{{ t.task }}</span>
+            </div>
+            <div class="bulk-control">
+              <input type="range" min="0" max="100" step="5" v-model.number="t.progress" class="bulk-slider" />
+              <span class="bulk-val">{{ t.progress }}%</span>
+              <select v-model.number="t.progress" class="bulk-select">
+                <option v-for="p in [0,10,20,30,40,50,60,70,80,90,100]" :key="p" :value="p">{{ p }}%</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="showBulkModal=false">취소</button>
+          <button class="btn btn-primary" @click="saveBulkProgress" :disabled="isSavingBulk">
+            {{ isSavingBulk ? '저장 중...' : '저장하기' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 업로드 확인 모달 -->
     <div v-if="showUploadConfirm" class="overlay">
@@ -179,9 +209,9 @@ export default {
       showSheetsModal: false, sheetsUrl: '',
       focusOverdueAt: 0, tasksLoading: true,
       navCollapsed: false,
-      navStatus: '',   // 현재 네비게이터 상태 ('progress'|'risk'|'overdue')
-      navClosed: true, // 닫혀있는지
+      navStatus: '', navClosed: true,
       focusStatusAt: { status: '', ts: 0 },
+      showBulkModal: false, bulkTasks: [], isSavingBulk: false,
       // 업로드 확인
       showUploadConfirm: false,
       pendingFile: null, pendingSheetsUrl: null,
@@ -195,7 +225,12 @@ export default {
     document.addEventListener('click', this.closeUploadMenu)
   },
   beforeUnmount() { document.removeEventListener('click', this.closeUploadMenu) },
-  watch: { project() { this.loadTasks() } },
+  watch: {
+    project() { this.loadTasks() },
+    showBulkModal(v) {
+      if (v) this.bulkTasks = this.tasks.map(t => ({ ...t }))
+    },
+  },
   computed: {
     navIcon()  {
       return { progress:'🟢', risk:'⚠️', overdue:'🚨' }[this.navStatus] || ''
@@ -335,10 +370,35 @@ export default {
       document.body.removeChild(a); URL.revokeObjectURL(url)
     },
 
-    async confirmDeleteAll() {
-      if (!confirm(`태스크 ${this.tasks.length}개를 전체 삭제하시겠습니까?\n삭제 전 자동으로 백업됩니다.`)) return
+    async saveBulkProgress() {
+      this.isSavingBulk = true
       try {
-        // 스냅샷 저장 후 전체 삭제
+        for (const t of this.bulkTasks) {
+          const orig = this.tasks.find(o => o.id === t.id)
+          if (orig && orig.progress !== t.progress) {
+            await api.updateTask(this.project.id, t.id, { ...orig, progress: t.progress })
+          }
+        }
+        this.$emit('toast', { msg: '진행률이 저장되었습니다', type: 'ok' })
+        this.showBulkModal = false
+        await this.loadTasks(); this.$emit('refresh-projects')
+      } catch(e) {
+        this.$emit('toast', { msg: '저장 실패: ' + e.message, type: 'err' })
+      } finally { this.isSavingBulk = false }
+    },
+    groupBadgeStyle(group) {
+      const palettes = {
+        '기획': { bg:'#dbeafe', color:'#1e40af' }, '기획팀': { bg:'#dbeafe', color:'#1e40af' },
+        '디자인': { bg:'#ede9fe', color:'#5b21b6' }, '디자인팀': { bg:'#ede9fe', color:'#5b21b6' },
+        '개발(BE)': { bg:'#dcfce7', color:'#166534' }, '개발(FE)': { bg:'#fef9c3', color:'#854d0e' },
+        'QA': { bg:'#fce7f3', color:'#9d174d' }, 'QA팀': { bg:'#fce7f3', color:'#9d174d' },
+      }
+      const p = palettes[group] || { bg:'#f1f5f9', color:'#475569' }
+      return { background: p.bg, color: p.color }
+    },
+    async confirmDeleteAll() {
+      if (!confirm('태스크 ' + this.tasks.length + '개를 전체 삭제하시겠습니까?')) return
+      try {
         await api.saveSnapshotBeforeDelete(this.project.id)
         for (const t of this.tasks) {
           await api.deleteTask(this.project.id, t.id)
@@ -445,6 +505,17 @@ export default {
 .snapshot-label{ font-size:13px; font-weight:500; color:var(--text) }
 .snapshot-time { font-size:11px; color:var(--muted); margin-top:2px }
 .empty-state { text-align:center; padding:24px; color:var(--muted); font-size:13px }
+
+/* 일괄 수정 */
+.bulk-list  { display:flex; flex-direction:column; gap:6px; max-height:400px; overflow-y:auto; margin-bottom:12px }
+.bulk-row   { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; background:var(--bg3); border-radius:8px }
+.bulk-info  { display:flex; align-items:center; gap:8px; flex:1; min-width:0 }
+.bulk-group { padding:2px 6px; border-radius:4px; font-size:10px; font-weight:600; white-space:nowrap; flex-shrink:0 }
+.bulk-name  { font-size:13px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.bulk-control { display:flex; align-items:center; gap:8px; flex-shrink:0 }
+.bulk-slider{ width:100px; accent-color:var(--amber) }
+.bulk-val   { font-size:12px; font-family:'DM Mono',monospace; color:var(--text); width:36px; text-align:right }
+.bulk-select{ background:var(--bg2); border:1px solid var(--border2); border-radius:5px; padding:3px 6px; color:var(--text); font-size:12px; outline:none }
 
 /* 스티키 상태 네비게이터 */
 .status-nav { position:sticky; bottom:16px; z-index:100; display:flex; justify-content:center; margin-top:12px; pointer-events:none }
