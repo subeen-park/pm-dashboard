@@ -16,14 +16,14 @@
       <table class="wbs-table">
         <colgroup>
           <col style="width:36px">
-          <col style="width:220px">
-          <col style="width:90px">
+          <col style="width:200px">
+          <col style="width:88px">
           <col style="width:96px">
           <col style="width:96px">
-          <col style="width:84px">
-          <col style="width:116px">
+          <col style="width:80px">
+          <col style="width:112px">
           <col style="width:64px">
-          <col style="width:140px">
+          <col style="width:200px">
           <col style="width:36px">
         </colgroup>
         <thead>
@@ -60,20 +60,30 @@
             <tr><td colspan="10" class="empty-state">{{ search ? '검색 결과 없음' : '태스크가 없습니다' }}</td></tr>
           </template>
           <template v-for="(list, group) in grouped" :key="group">
-            <tr class="group-row">
+            <tr class="group-row"
+              @dragover.prevent="onDragOver(group)"
+              @drop.prevent="onDrop(group)"
+              :class="{ 'drop-target': dragOverGroup===group && draggingGroup!==group }">
               <td colspan="10">
                 <span class="group-badge" :class="GROUP_COLORS[group]||'gb-plan'">{{ group }}</span>
+                <span v-if="dragOverGroup===group && draggingGroup!==group" class="drop-hint">여기에 놓기</span>
               </td>
             </tr>
             <tr v-for="t in list" :key="t.id"
               class="task-row"
-              :class="{ 'row-focused': focusedId===t.id }"
-              :data-task-id="t.id">
-              <td class="muted center">-</td>
+              :class="{ 'row-focused': focusedId===t.id, 'dragging': draggingId===t.id }"
+              :data-task-id="t.id"
+              draggable="true"
+              @dragstart="onDragStart(t, group)"
+              @dragend="onDragEnd">
+              <td class="muted center drag-handle" title="드래그로 그룹 이동">⠿</td>
               <td class="ellipsis task-name-cell" @click="showDetail(t)" style="cursor:pointer">
                 <span class="task-name" :title="t.task">{{ t.task }}</span>
                 <span v-if="t.endDate && isOverdue(t)" class="overdue-chip">
                   {{ Math.abs(diffDays(t.endDate)) }}일 지연
+                </span>
+                <span v-else-if="t.endDate && getStatus(t)==='risk'" class="risk-chip">
+                  D-{{ diffDays(t.endDate) }}
                 </span>
               </td>
               <td class="cell-text muted nowrap">{{ t.assignee || '-' }}</td>
@@ -169,7 +179,7 @@ export default {
     focusStatusAt:  { type: Object, default: () => ({ status: '', ts: 0 }) },
     loading:        { type: Boolean, default: false },
   },
-  emits: ['edit', 'delete'],
+  emits: ['edit', 'delete', 'move-group'],
   data() {
     return {
       GROUP_COLORS, STATUS_LABEL, STATUS_CLASS, SORT_OPTIONS,
@@ -180,6 +190,9 @@ export default {
       overdueIndex: 0,
       detailTask: null,
       statusIdx: {},
+      draggingId: null,
+      draggingGroup: null,
+      dragOverGroup: null,
     }
   },
   computed: {
@@ -219,6 +232,27 @@ export default {
     getStatus,
     diffDays,
     showDetail(t) { this.detailTask = t },
+    onDragStart(t, group) {
+      this.draggingId = t.id
+      this.draggingGroup = group
+      this._draggingTask = t
+    },
+    onDragEnd() {
+      this.draggingId = null
+      this.draggingGroup = null
+      this.dragOverGroup = null
+    },
+    onDragOver(group) { this.dragOverGroup = group },
+    onDrop(targetGroup) {
+      if (!this._draggingTask || targetGroup === this.draggingGroup) {
+        this.dragOverGroup = null; return
+      }
+      const updated = { ...this._draggingTask, group: targetGroup }
+      this.$emit('edit', updated)
+      // 즉시 저장
+      this.$emit('move-group', { task: this._draggingTask, newGroup: targetGroup })
+      this.dragOverGroup = null
+    },
     isOverdue(t) {
       const d = diffDays(t.endDate)
       return d !== null && d < 0 && parseInt(t.progress || 0) < 100
@@ -371,7 +405,19 @@ export default {
 .gb-ios     { background:#cffafe; color:#0e7490 }
 .gb-qa      { background:#fce7f3; color:#be185d }
 
-/* 지연 포커싱 */
+.risk-chip {
+  flex-shrink:0; display:inline-flex; align-items:center;
+  padding:2px 6px; border-radius:4px;
+  font-size:11px; font-weight:600;
+  background:var(--yellow-dim); color:var(--yellow);
+  white-space:nowrap;
+}
+/* 드래그앤드롭 */
+.drag-handle { cursor:grab; font-size:14px; color:var(--border2); user-select:none }
+.drag-handle:hover { color:var(--muted) }
+.task-row.dragging { opacity:.4 }
+.group-row.drop-target td { background:var(--amber-dim) !important }
+.drop-hint { margin-left:8px; font-size:11px; color:var(--amber); font-weight:600 }
 .row-focused td { background:rgba(239,68,68,.1) !important; transition:background .3s }
 .task-row td { transition:background .3s }
 

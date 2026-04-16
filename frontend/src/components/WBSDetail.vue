@@ -71,7 +71,7 @@
       <task-table v-if="activeTab==='tasks'" :tasks="tasks" :search="taskSearch"
         :focus-overdue-at="focusOverdueAt" :focus-status-at="focusStatusAt"
         :loading="tasksLoading"
-        @edit="openEdit" @delete="deleteTask" />
+        @edit="openEdit" @delete="deleteTask" @move-group="moveTaskGroup" />
 
       <!-- 스티키 네비게이터 (진행중/리스크/지연) -->
       <div v-if="activeTab==='tasks' && navStatus && !navClosed"
@@ -181,7 +181,6 @@
     </div>
   </div>
 </template>
-
 <script>
 import { api } from '../api/index.js'
 import { getStatus } from '../utils.js'
@@ -208,14 +207,11 @@ export default {
       isUploading: false, showUploadMenu: false,
       showSheetsModal: false, sheetsUrl: '',
       focusOverdueAt: 0, tasksLoading: true,
-      navCollapsed: false,
       navStatus: '', navClosed: true,
       focusStatusAt: { status: '', ts: 0 },
       showBulkModal: false, bulkTasks: [], isSavingBulk: false,
-      // 업로드 확인
       showUploadConfirm: false,
       pendingFile: null, pendingSheetsUrl: null,
-      // 히스토리
       showHistory: false, snapshots: [],
       isRestoring: false, restoringId: null,
     }
@@ -232,12 +228,8 @@ export default {
     },
   },
   computed: {
-    navIcon()  {
-      return { progress:'🟢', risk:'⚠️', overdue:'🚨' }[this.navStatus] || ''
-    },
-    navLabel() {
-      return { progress:'진행중', risk:'리스크', overdue:'지연' }[this.navStatus] || ''
-    },
+    navIcon()  { return { progress:'🟢', risk:'⚠️', overdue:'🚨' }[this.navStatus] || '' },
+    navLabel() { return { progress:'진행중', risk:'리스크', overdue:'지연' }[this.navStatus] || '' },
     navCount() {
       if (this.navStatus === 'overdue')  return this.cnt('overdue')
       if (this.navStatus === 'risk')     return this.cnt('risk')
@@ -263,18 +255,16 @@ export default {
       if (this.activeTab !== 'tasks') this.activeTab = 'tasks'
       this.navStatus = status
       this.navClosed = false
-      this.$nextTick(() => {
-        this.focusStatusAt = { status, ts: Date.now() }
-      })
+      this.$nextTick(() => { this.focusStatusAt = { status, ts: Date.now() } })
     },
     focusOverdue() { this.focusStatus('overdue') },
+
     closeUploadMenu(e) {
       if (this.$refs.uploadWrap && !this.$refs.uploadWrap.contains(e.target)) {
         this.showUploadMenu = false
       }
     },
 
-    // ── 파일 선택 시 확인창 표시 ──
     onFileSelected(event) {
       var file = event.target.files[0]
       if (!file) return
@@ -373,10 +363,11 @@ export default {
     async saveBulkProgress() {
       this.isSavingBulk = true
       try {
-        for (const t of this.bulkTasks) {
-          const orig = this.tasks.find(o => o.id === t.id)
+        for (var i = 0; i < this.bulkTasks.length; i++) {
+          var t = this.bulkTasks[i]
+          var orig = this.tasks.find(function(o) { return o.id === t.id })
           if (orig && orig.progress !== t.progress) {
-            await api.updateTask(this.project.id, t.id, { ...orig, progress: t.progress })
+            await api.updateTask(this.project.id, t.id, Object.assign({}, orig, { progress: t.progress }))
           }
         }
         this.$emit('toast', { msg: '진행률이 저장되었습니다', type: 'ok' })
@@ -386,22 +377,35 @@ export default {
         this.$emit('toast', { msg: '저장 실패: ' + e.message, type: 'err' })
       } finally { this.isSavingBulk = false }
     },
+
     groupBadgeStyle(group) {
-      const palettes = {
+      var palettes = {
         '기획': { bg:'#dbeafe', color:'#1e40af' }, '기획팀': { bg:'#dbeafe', color:'#1e40af' },
         '디자인': { bg:'#ede9fe', color:'#5b21b6' }, '디자인팀': { bg:'#ede9fe', color:'#5b21b6' },
         '개발(BE)': { bg:'#dcfce7', color:'#166534' }, '개발(FE)': { bg:'#fef9c3', color:'#854d0e' },
         'QA': { bg:'#fce7f3', color:'#9d174d' }, 'QA팀': { bg:'#fce7f3', color:'#9d174d' },
       }
-      const p = palettes[group] || { bg:'#f1f5f9', color:'#475569' }
+      var p = palettes[group] || { bg:'#f1f5f9', color:'#475569' }
       return { background: p.bg, color: p.color }
     },
+
+    async moveTaskGroup(payload) {
+      var task = payload.task, newGroup = payload.newGroup
+      try {
+        await api.updateTask(this.project.id, task.id, Object.assign({}, task, { group: newGroup }))
+        await this.loadTasks()
+        this.$emit('toast', { msg: task.task + ' → ' + newGroup + ' 이동 완료', type: 'ok' })
+      } catch(e) {
+        this.$emit('toast', { msg: '이동 실패: ' + e.message, type: 'err' })
+      }
+    },
+
     async confirmDeleteAll() {
       if (!confirm('태스크 ' + this.tasks.length + '개를 전체 삭제하시겠습니까?')) return
       try {
         await api.saveSnapshotBeforeDelete(this.project.id)
-        for (const t of this.tasks) {
-          await api.deleteTask(this.project.id, t.id)
+        for (var i = 0; i < this.tasks.length; i++) {
+          await api.deleteTask(this.project.id, this.tasks[i].id)
         }
         this.$emit('toast', { msg: '전체 태스크가 삭제되었습니다', type: 'info' })
         await this.loadTasks(); this.$emit('refresh-projects')
@@ -411,9 +415,8 @@ export default {
     },
 
     async loadSnapshots() {
-      try {
-        this.snapshots = await api.getSnapshots(this.project.id)
-      } catch(e) { this.snapshots = [] }
+      try { this.snapshots = await api.getSnapshots(this.project.id) }
+      catch(e) { this.snapshots = [] }
     },
 
     async restoreSnapshot(s) {

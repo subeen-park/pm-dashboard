@@ -304,6 +304,26 @@ def delete_task(pid, tid):
 # ── snapshot helpers ──────────────────────────────────────
 import json as _json
 
+# 그룹명 정규화
+GROUP_MAP = {
+    '기획팀':'기획', '기획부':'기획',
+    '디자인팀':'디자인',
+    'be팀':'개발(BE)', '백엔드':'개발(BE)', 'backend':'개발(BE)',
+    'fe팀':'개발(FE)', '프론트엔드':'개발(FE)', 'frontend':'개발(FE)',
+    'android팀':'Android', '안드로이드':'Android',
+    'ios팀':'iOS',
+    'qa팀':'QA', '품질':'QA',
+}
+STANDARD_GROUPS = ['기획','디자인','개발(BE)','개발(FE)','Android','iOS','QA']
+
+def normalize_group(g):
+    if not g: return '기획'
+    lower = g.strip().lower()
+    if lower in GROUP_MAP: return GROUP_MAP[lower]
+    for std in STANDARD_GROUPS:
+        if lower in std.lower() or std.lower() in lower: return std
+    return g.strip()
+
 def save_snapshot(pid, label):
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -405,7 +425,7 @@ def upload_tasks_excel(pid):
                     if not t_name and not s_name: continue
                     task_name = f"[{t_name}] {s_name}" if t_name and s_name else (t_name or s_name)
                     jira_val  = get_val(row, ['Jira','지라','Link','링크'])
-                    group_val = get_val(row, ['Team','Group','그룹','팀'], '기획')
+                    group_val = normalize_group(get_val(row, ['Team','Group','그룹','팀'], '기획'))
                     assignee  = get_val(row, ['Assignee','담당자'])
                     start_date= get_val(row, ['Start Date','시작일','시작']) or date.today().isoformat()
                     end_date  = get_val(row, ['End Date','마감일','종료일'])
@@ -465,7 +485,7 @@ def upload_from_sheets(pid):
                     cur.execute(
                         "INSERT INTO tasks (id,project_id,grp,task,assignee,start_date,end_date,progress,note,jira,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                         (tid, pid,
-                         get_val(row, ['Team','Group','그룹','팀'], '기획'),
+                         normalize_group(get_val(row, ['Team','Group','그룹','팀'], '기획')),
                          task_name,
                          get_val(row, ['Assignee','담당자']),
                          get_val(row, ['Start Date','시작일']) or date.today().isoformat(),

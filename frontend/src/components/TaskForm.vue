@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import { today, addDays, GROUPS } from '../utils.js'
+import { today, addDays, GROUPS, normalizeGroup } from '../utils.js'
 
 const def = () => ({ group:'기획', task:'', assignee:'', startDate:today(), endDate:addDays(today(),14), progress:0, note:'', jira:'' })
 
