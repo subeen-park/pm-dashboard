@@ -8,6 +8,17 @@
       <button class="btn btn-primary" @click="showNewBoard = true">+ 새 체크리스트</button>
     </div>
 
+    <!-- 버전 탭 네비 -->
+    <div v-if="boards.length > 0" class="version-nav">
+      <div v-for="board in boards" :key="'nav-'+board.id"
+        class="version-tab"
+        :class="{ 'tab-done': boardProgress(board) === 100, 'tab-active': activeBoard === board.id }"
+        @click="scrollToBoard(board.id)">
+        <span class="vtab-version">{{ board.version }}</span>
+        <span class="vtab-pct">{{ boardProgress(board) }}%</span>
+      </div>
+    </div>
+
     <div v-if="boards.length === 0" class="empty-hero">
       <div class="empty-title">체크리스트가 없습니다</div>
       <div class="empty-desc">릴리즈 버전별 체크리스트를 만들어 팀과 함께 진행 상황을 공유하세요.</div>
@@ -16,7 +27,8 @@
 
     <div v-else class="boards-grid">
       <div v-for="board in boards" :key="board.id" class="board-card"
-        :class="{ 'board-done': boardProgress(board) === 100 }">
+        :ref="'board-' + board.id"
+        :class="{ 'board-done': boardProgress(board) === 100, 'board-focused': activeBoard === board.id }">
 
         <div class="board-card-header">
           <div class="board-header-info">
@@ -238,6 +250,7 @@ export default {
       selectedTemplate: 'standard',
       TEMPLATES: TEMPLATES,
       CIRC: CIRC,
+      activeBoard: null,
     }
   },
   mounted() {
@@ -251,6 +264,19 @@ export default {
   },
   methods: {
     save() { localStorage.setItem('release-checklists', JSON.stringify(this.boards)) },
+    scrollToBoard(id) {
+      this.activeBoard = id
+      var self = this
+      this.$nextTick(function() {
+        var el = self.$refs['board-' + id]
+        if (el) {
+          var target = Array.isArray(el) ? el[0] : el
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          // 2초 후 포커스 하이라이트 해제
+          setTimeout(function() { self.activeBoard = null }, 2000)
+        }
+      })
+    },
     boardProgress(board) {
       var total = 0, done = 0
       board.categories.forEach(function(cat) {
@@ -297,6 +323,15 @@ export default {
 .cl-title  { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 2px }
 .cl-desc   { font-size: 13px; color: var(--muted) }
 
+/* 버전 탭 네비 */
+.version-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border) }
+.version-tab { display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg2); cursor: pointer; transition: all .15s }
+.version-tab:hover { border-color: var(--amber); background: var(--bg3) }
+.version-tab.tab-active { border-color: var(--amber); background: var(--amber-dim) }
+.version-tab.tab-done .vtab-pct { color: var(--green) }
+.vtab-version { font-size: 12px; font-family: 'DM Mono', monospace; font-weight: 700; color: var(--text) }
+.vtab-pct { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted) }
+
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; border: none; font-weight: 500; transition: all .15s }
 .btn-primary { background: var(--amber); color: #0a0800 }.btn-primary:hover { background: #f0b85a }
 .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border2) }.btn-ghost:hover { background: var(--bg3) }
@@ -308,9 +343,10 @@ export default {
 
 .boards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px }
 
-.board-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow .2s }
+.board-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow .2s, border-color .2s }
 .board-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1) }
 .board-done { border-color: var(--green) }
+.board-focused { border-color: var(--amber) !important; box-shadow: 0 0 0 3px var(--amber-dim) !important }
 
 .board-card-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 18px 12px }
 .board-header-info { flex: 1; min-width: 0 }

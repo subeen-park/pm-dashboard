@@ -258,7 +258,7 @@ export default {
 }
 
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:15px;min-height:100vh;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:16px;min-height:100vh;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased}
 .app{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
 
 /* GNB */
@@ -295,20 +295,20 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 @keyframes dot-bounce{from{opacity:.3;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 
 /* 홈 */
-.home-page{padding:0 48px 80px;max-width:1200px;margin:0 auto}
-.home-hero{padding:100px 0 80px;max-width:680px}
-.home-eyebrow{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:28px}
-.home-title{font-size:64px;font-weight:700;line-height:1.1;margin-bottom:24px;color:var(--text);letter-spacing:-.02em}
-.home-desc{font-size:15px;color:var(--muted);line-height:1.8;margin-bottom:40px;font-weight:300}
-.home-cta{font-size:13px;padding:11px 24px;border-radius:6px}
-.home-divider{height:1px;background:var(--border);margin-bottom:48px}
+.home-page{padding:0 56px 100px;max-width:1300px;margin:0 auto}
+.home-hero{padding:120px 0 96px;max-width:780px}
+.home-eyebrow{font-size:13px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:32px}
+.home-title{font-size:74px;font-weight:700;line-height:1.08;margin-bottom:28px;color:var(--text);letter-spacing:-.025em}
+.home-desc{font-size:17px;color:var(--muted);line-height:1.8;margin-bottom:44px;font-weight:300}
+.home-cta{font-size:14px;padding:13px 28px;border-radius:6px}
+.home-divider{height:1px;background:var(--border);margin-bottom:56px}
 .home-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.home-card{background:var(--bg2);padding:32px 28px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:16px;min-height:200px;position:relative}
+.home-card{background:var(--bg2);padding:36px 32px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:18px;min-height:230px;position:relative}
 .home-card:hover{background:var(--bg3)}
-.home-card-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em}
-.home-card-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
-.home-card-desc{font-size:12px;color:var(--muted);line-height:1.7;flex:1}
-.home-card-action{font-size:11px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
+.home-card-num{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em}
+.home-card-title{font-size:17px;font-weight:600;color:var(--text);line-height:1.3}
+.home-card-desc{font-size:14px;color:var(--muted);line-height:1.75;flex:1}
+.home-card-action{font-size:12px;color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
 
 /* 토스트 */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column;gap:8px}
