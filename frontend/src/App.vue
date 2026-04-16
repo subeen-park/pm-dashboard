@@ -16,7 +16,7 @@
       </div>
       <nav class="gnb-nav">
         <div class="gnb-item" :class="{active: view==='home'}" @click="goHome">홈</div>
-        <div class="gnb-item" :class="{active: view==='list' || view==='detail'}" @click="goList">릴리즈 보드</div>
+        <div class="gnb-item" :class="{active: view==='list' || view==='detail'}" @click="goList">WBS 보드</div>
         <div class="gnb-item gnb-sub" v-if="view==='detail' && selectedProject">› {{ selectedProject.name }}</div>
         <div class="gnb-item" :class="{active: view==='merge'}" @click="goPage('merge')">머지 트래커</div>
         <div class="gnb-item" :class="{active: view==='jira'}" @click="goPage('jira')">Jira 레이더</div>
@@ -41,12 +41,12 @@
         <div class="home-badge">PM Suite</div>
         <h1 class="home-title">릴리즈부터 Jira까지,<br>PM 업무를 한 곳에서</h1>
         <p class="home-desc">WBS 관리, 머지/빌드 추적, Jira 정체 분석을<br>하나의 대시보드에서 통합 관리하세요.</p>
-        <button class="btn btn-primary home-cta" @click="goList">릴리즈 보드 시작하기 →</button>
+        <button class="btn btn-primary home-cta" @click="goList">WBS 보드 시작하기 →</button>
       </div>
       <div class="home-cards">
         <div class="home-card" @click="goList">
           <div class="home-card-icon">📋</div>
-          <div class="home-card-title">릴리즈 보드</div>
+          <div class="home-card-title">WBS 보드</div>
           <div class="home-card-desc">WBS 프로젝트와 태스크를 관리하고, 간트 차트로 일정을 시각화해요. 지연/리스크 현황을 한눈에 파악하세요.</div>
           <div class="home-card-action">시작하기 →</div>
         </div>
