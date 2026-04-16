@@ -44,12 +44,17 @@
     <div class="detail-body">
       <div class="metrics">
         <div class="mc"><div class="mc-label">전체</div><div class="mc-val" style="color:var(--blue)">{{ tasks.length }}</div></div>
-        <div class="mc"><div class="mc-label">진행중</div><div class="mc-val" style="color:var(--green)">{{ cnt('progress') + cnt('done') }}</div></div>
-        <div class="mc">
-          <div class="mc-label">리스크 <span class="mc-hint">D-7 이내</span></div>
-          <div class="mc-val" style="color:var(--yellow)">{{ cnt('risk') }}</div>
+        <div class="mc mc-clickable" @click="focusStatus('progress')" title="진행중 태스크로 이동">
+          <div class="mc-label">진행중 <span class="mc-arrow">↓</span></div>
+          <div class="mc-val" style="color:var(--green)">{{ cnt('progress') + cnt('done') }}</div>
+          <div v-if="cnt('progress')+cnt('done')" class="mc-sub">클릭해서 확인</div>
         </div>
-        <div class="mc mc-clickable" @click="focusOverdue" title="클릭하면 지연 태스크로 이동합니다">
+        <div class="mc mc-clickable" @click="focusStatus('risk')" title="리스크 태스크로 이동">
+          <div class="mc-label">리스크 <span class="mc-hint">D-7 이내</span> <span class="mc-arrow">↓</span></div>
+          <div class="mc-val" style="color:var(--yellow)">{{ cnt('risk') }}</div>
+          <div v-if="cnt('risk')" class="mc-sub">클릭해서 확인</div>
+        </div>
+        <div class="mc mc-clickable" @click="focusStatus('overdue')" title="지연 태스크로 이동">
           <div class="mc-label">지연 <span class="mc-arrow">↓</span></div>
           <div class="mc-val" style="color:var(--red)">{{ cnt('overdue') }}</div>
           <div v-if="cnt('overdue')" class="mc-sub">클릭해서 확인</div>
@@ -63,7 +68,8 @@
       </div>
 
       <task-table v-if="activeTab==='tasks'" :tasks="tasks" :search="taskSearch"
-        :focus-overdue-at="focusOverdueAt" :loading="tasksLoading"
+        :focus-overdue-at="focusOverdueAt" :focus-status-at="focusStatusAt"
+        :loading="tasksLoading"
         @edit="openEdit" @delete="deleteTask" />
 
       <!-- 스티키 지연 네비게이터 -->
@@ -175,6 +181,7 @@ export default {
       showSheetsModal: false, sheetsUrl: '',
       focusOverdueAt: 0, tasksLoading: true,
       navCollapsed: false,
+      focusStatusAt: { status: '', ts: 0 },
       // 업로드 확인
       showUploadConfirm: false,
       pendingFile: null, pendingSheetsUrl: null,
@@ -199,11 +206,18 @@ export default {
     openAdd()      { this.editingTask = null; this.showForm = true },
     openEdit(task) { this.editingTask = {...task}; this.showForm = true },
 
-    focusOverdue() {
-      if (!this.cnt('overdue')) return
+    focusStatus(status) {
+      const hasItems = status === 'overdue' ? this.cnt('overdue') :
+                       status === 'risk'    ? this.cnt('risk') :
+                       this.cnt('progress') + this.cnt('done')
+      if (!hasItems) return
       if (this.activeTab !== 'tasks') this.activeTab = 'tasks'
-      this.$nextTick(() => { this.focusOverdueAt++ })
+      this.$nextTick(() => {
+        this.focusStatusAt = { status, ts: Date.now() }
+        if (status === 'overdue') this.focusOverdueAt++
+      })
     },
+    focusOverdue() { this.focusStatus('overdue') },
     closeUploadMenu(e) {
       if (this.$refs.uploadWrap && !this.$refs.uploadWrap.contains(e.target)) {
         this.showUploadMenu = false

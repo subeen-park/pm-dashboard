@@ -36,23 +36,23 @@
         <div class="mc-label">전체 (머지 제외)</div>
         <div class="mc-val" style="color:var(--blue)">{{ unmergedTotal }}</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">미빌드</div>
+      <div class="mc mc-clickable" @click="activeTab='미빌드'">
+        <div class="mc-label">미빌드 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--muted)">{{ byStatus('미빌드').length }}</div>
         <div class="mc-sub">등록 독려 필요</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">빌드완료</div>
+      <div class="mc mc-clickable" @click="activeTab='빌드완료'">
+        <div class="mc-label">빌드완료 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--blue)">{{ byStatus('빌드완료').length }}</div>
         <div class="mc-sub">MR 생성 필요</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">머지요청완료</div>
+      <div class="mc mc-clickable" @click="activeTab='머지요청완료'">
+        <div class="mc-label">머지요청완료 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--yellow)">{{ byStatus('머지요청완료').length }}</div>
         <div class="mc-sub">최종 승인 대기</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">머지완료</div>
+      <div class="mc mc-clickable" @click="activeTab='머지 완료'">
+        <div class="mc-label">머지완료 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--green)">{{ byStatus('머지 완료').length }}</div>
         <div class="mc-sub">배포 준비 완료</div>
       </div>
@@ -239,6 +239,9 @@ export default {
 .mc-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px }
 .mc-val  { font-size:24px; font-family:'DM Mono',monospace; font-weight:600 }
 .mc-sub  { font-size:11px; color:var(--muted); margin-top:3px }
+.mc-arrow{ font-size:11px }
+.mc-clickable { cursor:pointer; transition:background .15s; user-select:none }
+.mc-clickable:hover { background:var(--bg3) }
 
 .tabs  { display:flex; gap:2px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:3px; width:fit-content; margin-bottom:14px }
 .tab   { padding:5px 14px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--muted); transition:all .15s; display:flex; align-items:center; gap:6px }

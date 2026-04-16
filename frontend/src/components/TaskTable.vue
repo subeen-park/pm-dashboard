@@ -70,18 +70,18 @@
               :class="{ 'row-focused': focusedId===t.id }"
               :data-task-id="t.id">
               <td class="muted center">-</td>
-              <td class="task-name-cell">
-                <span class="task-name">{{ t.task }}</span>
+              <td class="task-name-cell" @click="showDetail(t)" style="cursor:pointer">
+                <span class="task-name" :title="t.task">{{ t.task }}</span>
                 <span v-if="t.endDate && isOverdue(t)" class="overdue-chip">
                   {{ Math.abs(diffDays(t.endDate)) }}일 지연
                 </span>
               </td>
-              <td class="cell-text muted">{{ t.assignee || '-' }}</td>
-              <td class="cell-date muted" style="white-space:nowrap">{{ t.startDate || '-' }}</td>
+              <td class="cell-text muted nowrap">{{ t.assignee || '-' }}</td>
+              <td class="cell-date muted nowrap">{{ t.startDate || '-' }}</td>
 
               <!-- 마감일: 날짜만 표시 -->
-              <td v-if="!t.endDate" class="cell-text muted" style="white-space:nowrap">-</td>
-              <td v-else class="cell-date" :class="dateClass(t)" style="white-space:nowrap">{{ t.endDate }}</td>
+              <td v-if="!t.endDate" class="cell-text muted nowrap">-</td>
+              <td v-else class="cell-date nowrap" :class="dateClass(t)">{{ t.endDate }}</td>
 
               <td>
                 <template v-if="t.jira">
@@ -108,7 +108,7 @@
                 </span>
               </td>
 
-              <td class="note cell-text muted">{{ t.note }}</td>
+              <td class="note cell-text muted" :title="t.note" @click="t.note && showDetail(t)">{{ t.note }}</td>
 
               <td class="action-cell">
                 <div class="menu-wrapper" @click.stop>
@@ -129,6 +129,25 @@
       </table>
       </div>
     </div>
+
+    <!-- 태스크 상세 팝업 -->
+    <div v-if="detailTask" class="detail-overlay" @click.self="detailTask=null">
+      <div class="detail-popup">
+        <div class="detail-popup-header">
+          <span class="detail-popup-title">{{ detailTask.task }}</span>
+          <button class="detail-close" @click="detailTask=null">✕</button>
+        </div>
+        <div class="detail-popup-body">
+          <div class="detail-row"><span class="detail-key">그룹</span><span>{{ detailTask.group }}</span></div>
+          <div class="detail-row"><span class="detail-key">담당자</span><span>{{ detailTask.assignee || '-' }}</span></div>
+          <div class="detail-row"><span class="detail-key">시작일</span><span>{{ detailTask.startDate || '-' }}</span></div>
+          <div class="detail-row"><span class="detail-key">마감일</span><span>{{ detailTask.endDate || '-' }}</span></div>
+          <div class="detail-row"><span class="detail-key">진행률</span><span>{{ detailTask.progress || 0 }}%</span></div>
+          <div class="detail-row"><span class="detail-key">Jira</span><span>{{ detailTask.jira || '-' }}</span></div>
+          <div v-if="detailTask.note" class="detail-row detail-note"><span class="detail-key">메모</span><span>{{ detailTask.note }}</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -147,6 +166,7 @@ export default {
     tasks:          { type: Array, default: () => [] },
     search:         { type: String, default: '' },
     focusOverdueAt: { type: Number, default: 0 },
+    focusStatusAt:  { type: Object, default: () => ({ status: '', ts: 0 }) },
     loading:        { type: Boolean, default: false },
   },
   emits: ['edit', 'delete'],
@@ -158,6 +178,7 @@ export default {
       focusedId: null,
       overdueRefs: {},
       overdueIndex: 0,
+      detailTask: null,
     }
   },
   computed: {
@@ -189,6 +210,7 @@ export default {
   },
   watch: {
     focusOverdueAt(val) { if (val > 0) this.focusNextOverdue() },
+    focusStatusAt(val)  { if (val.ts > 0) this.focusNextByStatus(val.status) },
     tasks()             { this.overdueRefs = {}; this.overdueIndex = 0 },
   },
   mounted()      { document.addEventListener('click', this.closeMenu) },
@@ -196,6 +218,7 @@ export default {
   methods: {
     getStatus,
     diffDays,
+    showDetail(t) { this.detailTask = t },
     isOverdue(t) {
       const d = diffDays(t.endDate)
       return d !== null && d < 0 && parseInt(t.progress || 0) < 100
@@ -239,17 +262,25 @@ export default {
       if (confirm(`[${t.task}] 태스크를 삭제하시겠습니까?`)) this.$emit('delete', t.id)
       this.closeMenu()
     },
-    focusNextOverdue() {
+    focusNextOverdue() { this.focusNextByStatus('overdue') },
+    focusNextByStatus(status) {
+      if (!this._statusIdx) this._statusIdx = {}
+      if (!this._statusIdx[status]) this._statusIdx[status] = 0
       const ids = []
       Object.values(this.grouped).forEach(list => {
-        list.filter(t => getStatus(t) === 'overdue').forEach(t => ids.push(t.id))
+        list.filter(t => {
+          const s = getStatus(t)
+          if (status === 'overdue')  return s === 'overdue'
+          if (status === 'risk')     return s === 'risk'
+          if (status === 'progress') return s === 'progress' || s === 'done'
+          return false
+        }).forEach(t => ids.push(t.id))
       })
       if (!ids.length) return
-      const id = ids[this.overdueIndex % ids.length]
-      this.overdueIndex++
+      const id = ids[this._statusIdx[status] % ids.length]
+      this._statusIdx[status]++
       this.focusedId = id
       this.$nextTick(() => {
-        // querySelector로 data-id 속성 기반 찾기
         const el = this.$el.querySelector(`[data-task-id="${id}"]`)
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         setTimeout(() => { this.focusedId = null }, 1800)
@@ -312,7 +343,22 @@ export default {
 .sb-overdue { background:var(--red-dim);   color:var(--red) }
 .sb-pending { background:var(--bg4);       color:var(--muted) }
 
-.note { overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.note { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer }
+.note:hover { color:var(--text) }
+.nowrap { white-space:nowrap; overflow:hidden; text-overflow:clip }
+
+/* 태스크 상세 팝업 */
+.detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:500; display:flex; align-items:center; justify-content:center }
+.detail-popup { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; width:420px; max-width:90vw; overflow:hidden }
+.detail-popup-header { display:flex; align-items:flex-start; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); gap:12px }
+.detail-popup-title { font-size:14px; font-weight:600; color:var(--text); line-height:1.5 }
+.detail-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:2px; flex-shrink:0 }
+.detail-close:hover { color:var(--text) }
+.detail-popup-body { padding:16px 20px; display:flex; flex-direction:column; gap:10px }
+.detail-row { display:flex; gap:12px; font-size:13px }
+.detail-key { color:var(--muted); width:52px; flex-shrink:0; font-size:12px }
+.detail-note { align-items:flex-start }
+.detail-note span:last-child { line-height:1.6; color:var(--text) }
 
 /* 그룹 행 — 라이트모드 색상 */
 .group-row td { background:var(--bg3); padding:8px 12px; border-bottom:1px solid var(--border) }

@@ -28,21 +28,21 @@
         <div class="mc-label">총 관리 대상</div>
         <div class="mc-val" style="color:var(--blue)">{{ displayData.length }}</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">⚠️ 정체 리스크</div>
+      <div class="mc mc-clickable" @click="activeTab='aging'; activeType='전체'" title="정체 리스크 탭으로 이동">
+        <div class="mc-label">⚠️ 정체 리스크 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--yellow)">{{ highRiskData.length }}</div>
         <div class="mc-sub">{{ riskThreshold }}일 이상 정체</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">최대 정체</div>
-        <div class="mc-val" style="color:var(--red)">{{ maxAging }}일</div>
+      <div class="mc mc-clickable" @click="activeTab='aging'; activeType='전체'" title="정체 탭으로 이동">
+        <div class="mc-label">최대 정체 <span class="mc-arrow">↓</span></div>
+        <div class="mc-val" style="color:var(--red)"><span class="mc-num">{{ maxAging }}</span><span class="mc-unit">일</span></div>
       </div>
-      <div class="mc">
-        <div class="mc-label">기한 누락</div>
+      <div class="mc mc-clickable" @click="activeTab='due'" title="일정 리스크 탭으로 이동">
+        <div class="mc-label">기한 누락 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--muted)">{{ missingDueData.length }}</div>
       </div>
-      <div class="mc">
-        <div class="mc-label">기한 지연</div>
+      <div class="mc mc-clickable" @click="activeTab='due'" title="일정 리스크 탭으로 이동">
+        <div class="mc-label">기한 지연 <span class="mc-arrow">↓</span></div>
         <div class="mc-val" style="color:var(--red)">{{ overdueData.length }}</div>
       </div>
     </div>
@@ -273,8 +273,13 @@ export default {
 .metrics { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px }
 .mc      { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px }
 .mc-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px }
-.mc-val  { font-size:24px; font-family:'DM Mono',monospace; font-weight:600 }
+.mc-val  { font-size:24px; font-weight:600; display:flex; align-items:baseline; gap:2px }
+.mc-num  { font-family:'DM Mono',monospace }
+.mc-unit { font-family:'Noto Sans KR',sans-serif; font-size:16px }
 .mc-sub  { font-size:11px; color:var(--muted); margin-top:3px }
+.mc-arrow{ font-size:11px }
+.mc-clickable { cursor:pointer; transition:background .15s; user-select:none }
+.mc-clickable:hover { background:var(--bg3) }
 
 .section-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px }
 
