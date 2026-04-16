@@ -72,7 +72,7 @@
         <!-- 기능 카드 그리드 -->
         <div class="home-cards">
           <div class="home-card card-wbs" @click="goList">
-            <div class="card-icon">📋</div>
+            <div class="card-icon ci-wbs">WBS</div>
             <div class="card-content">
               <div class="card-num">01</div>
               <div class="card-title">WBS 보드</div>
@@ -81,7 +81,7 @@
             <div class="card-arrow">→</div>
           </div>
           <div class="home-card card-cal" @click="goPage('calendar')">
-            <div class="card-icon">📅</div>
+            <div class="card-icon ci-cal">CAL</div>
             <div class="card-content">
               <div class="card-num">02</div>
               <div class="card-title">릴리즈 캘린더</div>
@@ -90,7 +90,7 @@
             <div class="card-arrow">→</div>
           </div>
           <div class="home-card card-check" @click="goPage('checklist')">
-            <div class="card-icon">✅</div>
+            <div class="card-icon ci-chk">CHK</div>
             <div class="card-content">
               <div class="card-num">03</div>
               <div class="card-title">릴리즈 체크리스트</div>
@@ -99,7 +99,7 @@
             <div class="card-arrow">→</div>
           </div>
           <div class="home-card card-merge" @click="goPage('merge')">
-            <div class="card-icon">🔀</div>
+            <div class="card-icon ci-mrg">MRG</div>
             <div class="card-content">
               <div class="card-num">04</div>
               <div class="card-title">머지 트래커</div>
@@ -108,7 +108,7 @@
             <div class="card-arrow">→</div>
           </div>
           <div class="home-card card-jira" @click="goPage('jira')">
-            <div class="card-icon">🎯</div>
+            <div class="card-icon ci-jra">JIRA</div>
             <div class="card-content">
               <div class="card-num">05</div>
               <div class="card-title">Jira 레이더</div>
@@ -332,7 +332,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 
 /* ── 홈 ── */
 .home-page{overflow-y:auto;min-height:calc(100vh - 54px)}
-.home-inner{max-width:1100px;margin:0 auto;padding:80px 48px 80px}
+.home-inner{max-width:1280px;margin:0 auto;padding:72px 32px 72px}
 
 .home-hero{margin-bottom:64px}
 .home-badge{display:inline-block;background:var(--primary-dim);color:var(--primary);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:.04em;margin-bottom:24px}
@@ -372,7 +372,12 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .card-jira::before{background:linear-gradient(90deg,#e53e3e,#fc8181)}
 .card-jira:hover{box-shadow:0 8px 28px rgba(229,62,62,.15)}
 
-.card-icon{font-size:22px}
+.card-icon{font-size:9px;font-weight:800;letter-spacing:.08em;font-family:'DM Mono',monospace;display:inline-flex;align-items:center;justify-content:center;width:36px;height:22px;border-radius:5px;margin-bottom:2px}
+.ci-wbs{background:rgba(53,99,233,.12);color:#3563E9}
+.ci-cal{background:rgba(24,160,88,.12);color:#18a058}
+.ci-chk{background:rgba(212,136,6,.12);color:#d48806}
+.ci-mrg{background:rgba(124,58,237,.12);color:#7c3aed}
+.ci-jra{background:rgba(229,62,62,.12);color:#e53e3e}
 .card-content{flex:1}
 .card-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
 .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3}
@@ -407,7 +412,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   .home-title{font-size:40px}
 }
 @media(max-width:640px){
-  .home-inner{padding:40px 24px 60px}
+  .home-inner{padding:40px 20px 60px}
   .home-cards{grid-template-columns:1fr 1fr}
   .home-title{font-size:32px}
 }

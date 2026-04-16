@@ -268,7 +268,7 @@ export default {
 .legend-row { display: flex; align-items: center; gap: 8px }
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0 }
 .ld-done    { background: var(--green) }
-.ld-progress{ background: var(--blue) }
+.ld-progress{ background: #4a90d9 }
 .ld-risk    { background: var(--yellow) }
 .ld-overdue { background: var(--red) }
 .ld-pending { background: var(--muted) }
@@ -277,8 +277,8 @@ export default {
 .nav-btn { background: var(--bg2); border: 1px solid var(--border2); border-radius: 7px; color: var(--text); width: 30px; height: 30px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; font-family: inherit; transition: background .15s }
 .nav-btn:hover { background: var(--bg3) }
 .month-label { font-size: 15px; font-weight: 700; color: var(--text); min-width: 100px; text-align: center }
-.today-btn { background: var(--amber); color: #0a0800; border: none; border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit }
-.today-btn:hover { background: #f0b85a }
+.today-btn { background: var(--primary); color: #fff; border: none; border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit }
+.today-btn:hover { background: var(--primary-hover) }
 
 .loading-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; flex: 1; color: var(--muted) }
 .loading-spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--amber); border-radius: 50%; animation: spin 1s linear infinite }
@@ -291,17 +291,17 @@ export default {
 .weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); flex-shrink: 0 }
 .weekday-cell { text-align: center; padding: 8px 4px; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase }
 .weekday-cell.sunday   { color: var(--red) }
-.weekday-cell.saturday { color: var(--blue) }
+.weekday-cell.saturday { color: #4a90d9 }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex: 1; min-height: 0 }
 .cal-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px 5px; transition: background .12s; display: flex; flex-direction: column; overflow: hidden }
 .cal-cell:hover { background: var(--bg3) }
 .cal-cell:nth-child(7n) { border-right: none }
 .other-month   { opacity: .3 }
-.today-cell    { background: rgba(232,169,74,.06) }
+.today-cell    { background: rgba(53,99,233,.05) }
 .sunday-cell   .cell-num { color: var(--red) }
-.saturday-cell .cell-num { color: var(--blue) }
+.saturday-cell .cell-num { color: #4a90d9 }
 .cell-num  { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; flex-shrink: 0 }
-.today-num { background: var(--amber); color: #0a0800; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px }
+.today-num { background: var(--primary); color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px }
 .cell-events { display: flex; flex-direction: column; gap: 2px; overflow: hidden }
 .cell-ev   { display: flex; align-items: center; gap: 4px; border-radius: 3px; padding: 1px 4px; cursor: pointer; transition: opacity .12s }
 .cell-ev:hover { opacity: .75 }
@@ -310,7 +310,7 @@ export default {
 .cell-more { font-size: 10px; color: var(--muted); padding-left: 7px }
 
 .cev-done     .cev-bar { background: var(--green) } .cev-done     .cev-text { color: var(--green) }
-.cev-progress .cev-bar { background: var(--blue) }  .cev-progress .cev-text { color: var(--blue) }
+.cev-progress .cev-bar { background: #4a90d9 }  .cev-progress .cev-text { color: #2a72c8 }
 .cev-risk     .cev-bar { background: var(--yellow) } .cev-risk    .cev-text { color: var(--yellow) }
 .cev-overdue  .cev-bar { background: var(--red) }   .cev-overdue  .cev-text { color: var(--red) }
 .cev-pending  .cev-bar { background: var(--muted) } .cev-pending  .cev-text { color: var(--muted) }
@@ -344,7 +344,7 @@ export default {
 .side-event:hover { background: var(--bg3) }
 .sev-indicator { width: 3px; height: 30px; border-radius: 2px; flex-shrink: 0 }
 .ind-done     { background: var(--green) }
-.ind-progress { background: var(--blue) }
+.ind-progress { background: #4a90d9 }
 .ind-risk     { background: var(--yellow) }
 .ind-overdue  { background: var(--red) }
 .ind-pending  { background: var(--muted) }
@@ -353,7 +353,7 @@ export default {
 .sev-meta  { font-size: 10px; color: var(--muted); margin-top: 2px }
 .sev-badge { flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px }
 .badge-done     { background: var(--green-dim); color: var(--green) }
-.badge-progress { background: var(--blue-dim);  color: var(--blue) }
+.badge-progress { background: rgba(74,144,217,.12);  color: #2a72c8 }
 .badge-risk     { background: var(--yellow-dim); color: var(--yellow) }
 .badge-overdue  { background: var(--red-dim);   color: var(--red) }
 .badge-pending  { background: var(--bg4);       color: var(--muted) }
@@ -364,7 +364,7 @@ export default {
 .ev-popup-header { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); position: relative }
 .ev-type-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 6px }
 .tag-done     { background: var(--green-dim); color: var(--green) }
-.tag-progress { background: var(--blue-dim);  color: var(--blue) }
+.tag-progress { background: rgba(74,144,217,.12);  color: #2a72c8 }
 .tag-risk     { background: var(--yellow-dim); color: var(--yellow) }
 .tag-overdue  { background: var(--red-dim);   color: var(--red) }
 .tag-pending  { background: var(--bg4);       color: var(--muted) }
